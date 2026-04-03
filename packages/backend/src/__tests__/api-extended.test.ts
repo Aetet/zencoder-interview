@@ -55,11 +55,14 @@ describe('GET /api/costs/breakdown (extended)', () => {
     expect(d7.body.total).toBeLessThanOrEqual(d30.body.total)
   })
 
-  it('2.7 - team_id filter scopes byTeam to one team', async () => {
+  it('2.7 - team_id filter scopes cost to that team', async () => {
     const { body } = await get('/api/costs/breakdown?range=30d&team_id=backend')
-    const nonZeroTeams = body.byTeam.filter((t: any) => t.cost > 0)
-    expect(nonZeroTeams.length).toBe(1)
-    expect(nonZeroTeams[0].teamId).toBe('backend')
+    const backendEntry = body.byTeam.find((t: any) => t.teamId === 'backend')
+    expect(backendEntry).toBeDefined()
+    expect(backendEntry.cost).toBeGreaterThan(0)
+    // All other teams should have 0 cost
+    const otherNonZero = body.byTeam.filter((t: any) => t.teamId !== 'backend' && t.cost > 0)
+    expect(otherNonZero.length).toBe(0)
   })
 
   it('2.8 - costPerSession equals total / completed sessions', async () => {

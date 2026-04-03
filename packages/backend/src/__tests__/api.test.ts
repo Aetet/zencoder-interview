@@ -127,7 +127,7 @@ describe('GET /api/teams', () => {
     const { status, body } = await get('/api/teams?range=30d')
     expect(status).toBe(200)
     expect(Array.isArray(body)).toBe(true)
-    expect(body.length).toBe(6)
+    expect(body.length).toBe(1000)
   })
 
   it('each team has required fields', async () => {

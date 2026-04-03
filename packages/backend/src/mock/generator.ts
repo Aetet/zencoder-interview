@@ -47,14 +47,49 @@ function weightedPick<T>(items: T[], weights: number[]): T {
   return items[items.length - 1]
 }
 
-const TEAM_DEFS: MockTeam[] = [
-  { id: 'backend', name: 'Backend' },
-  { id: 'frontend', name: 'Frontend' },
-  { id: 'platform', name: 'Platform' },
-  { id: 'data', name: 'Data' },
-  { id: 'mobile', name: 'Mobile' },
-  { id: 'devops', name: 'DevOps' },
+const TEAM_PREFIXES = [
+  'Backend', 'Frontend', 'Platform', 'Data', 'Mobile', 'DevOps',
+  'Infra', 'Auth', 'Payments', 'Search', 'ML', 'Analytics',
+  'Billing', 'Onboarding', 'Notifications', 'Integrations',
+  'Core', 'Growth', 'Security', 'Compliance', 'Tooling', 'DX',
+  'API', 'Web', 'iOS', 'Android', 'Desktop', 'CLI', 'SDK', 'Docs',
+  'QA', 'SRE', 'Release', 'Performance', 'Observability', 'Edge',
+  'Streaming', 'Storage', 'Cache', 'Gateway', 'Identity', 'Catalog',
 ]
+
+const TEAM_SUFFIXES = [
+  '', 'Alpha', 'Beta', 'Core', 'Platform', 'Services',
+  'Engine', 'Hub', 'Studio', 'Labs', 'Team', 'Squad',
+  'West', 'East', 'EU', 'APAC', 'US', 'Global',
+  'V2', 'Next', 'Prime', 'Plus', 'Pro', 'Lite',
+]
+
+function generateTeams(count: number): MockTeam[] {
+  const teams: MockTeam[] = []
+  const usedNames = new Set<string>()
+
+  for (let i = 0; i < count; i++) {
+    let name: string
+    if (i < TEAM_PREFIXES.length) {
+      name = TEAM_PREFIXES[i]
+    } else {
+      const prefix = TEAM_PREFIXES[i % TEAM_PREFIXES.length]
+      const suffix = TEAM_SUFFIXES[Math.floor(i / TEAM_PREFIXES.length) % TEAM_SUFFIXES.length]
+      name = suffix ? `${prefix} ${suffix}` : `${prefix} ${Math.floor(i / TEAM_PREFIXES.length)}`
+    }
+    if (usedNames.has(name)) name = `${name}-${i}`
+    usedNames.add(name)
+
+    teams.push({
+      id: name.toLowerCase().replace(/\s+/g, '-'),
+      name,
+    })
+  }
+  return teams
+}
+
+const TEAM_COUNT = 1000
+const TEAM_DEFS: MockTeam[] = generateTeams(TEAM_COUNT)
 
 const FIRST_NAMES = ['alice', 'bob', 'carol', 'dave', 'eve', 'frank', 'grace', 'heidi', 'ivan', 'judy']
 const LAST_NAMES = ['smith', 'jones', 'chen', 'garcia', 'kim', 'patel', 'silva', 'nguyen', 'murphy', 'taylor']
@@ -63,7 +98,7 @@ function generateUsers(teams: MockTeam[]): MockUser[] {
   const users: MockUser[] = []
   let id = 1
   for (const team of teams) {
-    const count = rand(7, 10)
+    const count = rand(2, 5) // 2-5 users per team, ~3500 total for 1000 teams
     for (let i = 0; i < count; i++) {
       const first = pick(FIRST_NAMES)
       const last = pick(LAST_NAMES)
