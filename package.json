@@ -1,0 +1,17 @@
+{
+  "name": "zendash",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel -r dev",
+    "dev:backend": "pnpm --filter backend dev",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "build": "pnpm -r build",
+    "lint": "oxlint .",
+    "format": "oxlint --fix .",
+    "test": "pnpm -r test"
+  },
+  "devDependencies": {
+    "oxlint": "latest",
+    "typescript": "^5.8.0"
+  }
+}

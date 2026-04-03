@@ -1,0 +1,21 @@
+{
+  "name": "backend",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "hono": "^4.7.0",
+    "@hono/node-server": "^1.14.0",
+    "@zendash/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.1.0"
+  }
+}

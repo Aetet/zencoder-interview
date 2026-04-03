@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #100f0d;
+  --color-background-secondary: #131210;
+  --color-card: #151513;
+  --color-popover: #181715;
+  --color-muted: #1a1917;
+  --color-accent: #232320;
+  --color-input: #1f1e1b;
+  --color-foreground: #f6f5f3;
+  --color-foreground-secondary: #e5e4e2;
+  --color-foreground-muted: #9f9e9c;
+  --color-primary: #c34513;
+  --color-primary-hover: #a83b10;
+  --color-primary-foreground: #f6f5f2;
+  --color-brand: #e65c2c;
+  --color-accent-foreground: #fda16b;
+  --color-success: #218b30;
+  --color-error: #d1003e;
+  --color-warning: #ffb900;
+  --color-chart-blue: #3b82f6;
+  --color-chart-purple: #8b5cf6;
+  --color-chart-cyan: #06b6d4;
+  --color-chart-green: #218b30;
+  --color-chart-orange: #c34513;
+  --color-chart-red: #d1003e;
+  --color-chart-gray: #9f9e9c;
+  --color-border: rgba(246, 245, 243, 0.09);
+  --color-ring: rgba(246, 245, 243, 0.05);
+  --color-row-alt: rgba(246, 245, 243, 0.03);
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: 'Inter', system-ui, sans-serif;
+  margin: 0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Smooth live-mode transitions on KPI values, table cells, insight text */
+.live-value {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Recharts animation override for live mode — faster transitions */
+.live-chart .recharts-bar-rectangle,
+.live-chart .recharts-area-area,
+.live-chart .recharts-area-curve {
+  transition: all 0.15s ease-out;
+}
+
+/* Pulse glow on KPI card when value changes in live mode */
+@keyframes live-flash {
+  0% { box-shadow: 0 0 0 0 rgba(195, 69, 19, 0.3); }
+  50% { box-shadow: 0 0 8px 2px rgba(195, 69, 19, 0.15); }
+  100% { box-shadow: 0 0 0 0 rgba(195, 69, 19, 0); }
+}
+
+.live-card {
+  animation: live-flash 0.4s ease-out;
+}
+
+/* Smooth number counter transitions */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  transition: all 0.2s ease-out;
+}
