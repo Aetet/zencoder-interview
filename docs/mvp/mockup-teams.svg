@@ -1,0 +1,338 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1050" width="1200" height="1050" font-family="Inter, 'Segoe UI', Arial, sans-serif">
+  <defs>
+    <style>
+      .sidebar-text { fill: #f6f5f3; font-size: 13px; }
+      .nav-item { fill: #9f9e9c; font-size: 13px; cursor: pointer; }
+      .nav-item-active { fill: #fda16b; font-size: 13px; font-weight: 600; }
+      .section-title { fill: #f6f5f3; font-size: 15px; font-weight: 600; }
+      .table-header { fill: #9f9e9c; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+      .table-cell { fill: #f6f5f3; font-size: 12px; }
+      .table-cell-bold { fill: #f6f5f3; font-size: 12px; font-weight: 600; }
+      .table-cell-muted { fill: #9f9e9c; font-size: 12px; }
+      .table-cell-warn { fill: #ffb900; font-size: 12px; }
+      .table-cell-error { fill: #d1003e; font-size: 12px; }
+      .table-cell-link { fill: #fda16b; font-size: 12px; }
+      .kpi-value { fill: #f6f5f3; font-size: 20px; font-weight: 700; }
+      .kpi-label { fill: #9f9e9c; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+      .kpi-sub { fill: #9f9e9c; font-size: 10px; }
+      .filter-text { fill: #9f9e9c; font-size: 11px; }
+      .filter-active { fill: #f6f5f3; font-size: 11px; font-weight: 600; }
+      .tab-text { fill: #9f9e9c; font-size: 12px; cursor: pointer; }
+      .tab-active { fill: #f6f5f3; font-size: 12px; font-weight: 600; }
+      .chart-label { fill: #9f9e9c; font-size: 10px; }
+      .chart-title { fill: #f6f5f3; font-size: 13px; font-weight: 600; }
+      .divider-label { fill: #9f9e9c; font-size: 12px; font-style: italic; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="1050" fill="#100f0d"/>
+
+  <!-- ==================== LEFT SIDEBAR ==================== -->
+  <rect x="0" y="0" width="220" height="1050" fill="#131210"/>
+
+  <!-- Logo -->
+  <text x="24" y="36" fill="#f6f5f3" font-size="18" font-weight="700">ZenDash</text>
+  <circle cx="106" cy="30" r="4" fill="#e65c2c"/>
+  <line x1="16" y1="52" x2="204" y2="52" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+
+  <!-- Nav Items -->
+  <!-- Overview -->
+  <rect x="8" y="64" width="204" height="36" rx="6" fill="transparent"/>
+  <text x="24" y="87" class="nav-item">Overview</text>
+
+  <!-- Costs -->
+  <rect x="8" y="104" width="204" height="36" rx="6" fill="transparent"/>
+  <text x="24" y="127" class="nav-item">Costs</text>
+
+  <!-- Teams (active) -->
+  <rect x="8" y="144" width="204" height="36" rx="6" fill="#232320"/>
+  <rect x="8" y="144" width="3" height="36" rx="1" fill="#c34513"/>
+  <text x="24" y="167" class="nav-item-active">Teams</text>
+
+  <!-- Settings -->
+  <rect x="8" y="184" width="204" height="36" rx="6" fill="transparent"/>
+  <text x="24" y="207" class="nav-item">Settings</text>
+
+  <!-- Bottom org name -->
+  <text x="24" y="1030" fill="#9f9e9c" font-size="12">Acme Corp</text>
+
+  <!-- ==================== TOP FILTER BAR ==================== -->
+  <rect x="220" y="0" width="980" height="56" fill="#151513"/>
+  <line x1="220" y1="56" x2="1200" y2="56" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+
+  <!-- Time range pills -->
+  <text x="240" y="33" class="filter-text">Today</text>
+  <text x="284" y="33" class="filter-text">7d</text>
+  <rect x="308" y="18" width="36" height="24" rx="12" fill="#232320"/>
+  <text x="316" y="34" class="filter-active">30d</text>
+  <text x="358" y="33" class="filter-text">90d</text>
+  <text x="390" y="33" class="filter-text">Custom</text>
+
+  <!-- Separator -->
+  <line x1="440" y1="14" x2="440" y2="42" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+
+  <!-- Dropdowns -->
+  <rect x="456" y="16" width="100" height="26" rx="12" fill="#232320" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <text x="468" y="33" class="filter-text">Team: All ▾</text>
+
+  <rect x="568" y="16" width="100" height="26" rx="12" fill="#232320" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <text x="580" y="33" class="filter-text">User: All ▾</text>
+
+  <rect x="680" y="16" width="108" height="26" rx="12" fill="#232320" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <text x="692" y="33" class="filter-text">Model: All ▾</text>
+
+  <!-- Export CSV button -->
+  <rect x="1096" y="16" width="84" height="26" rx="12" fill="#c34513"/>
+  <text x="1110" y="33" fill="#f6f5f3" font-size="11" font-weight="500">Export CSV</text>
+
+  <!-- ==================== TEAM SELECTOR TABS ==================== -->
+  <rect x="220" y="56" width="980" height="44" fill="#100f0d"/>
+
+  <!-- All Teams tab (active) -->
+  <rect x="236" y="64" width="80" height="28" rx="12" fill="#232320"/>
+  <text x="250" y="82" class="tab-active">All Teams</text>
+
+  <text x="336" y="82" class="tab-text">Backend</text>
+  <text x="404" y="82" class="tab-text">Frontend</text>
+  <text x="476" y="82" class="tab-text">Platform</text>
+  <text x="544" y="82" class="tab-text">Data</text>
+  <text x="584" y="82" class="tab-text">Mobile</text>
+  <text x="640" y="82" class="tab-text">DevOps</text>
+
+  <!-- ==================== TEAM COMPARISON TABLE ==================== -->
+  <!-- Table container -->
+  <rect x="236" y="112" width="944" height="236" rx="12" fill="#151513" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+
+  <!-- Table header -->
+  <text x="252" y="138" class="table-header">Team</text>
+  <text x="390" y="138" class="table-header">Sessions</text>
+  <text x="500" y="138" class="table-header">Cost</text>
+  <text x="600" y="138" class="table-header">Completion</text>
+  <text x="720" y="138" class="table-header">Cost/Session</text>
+  <text x="850" y="138" class="table-header">Cache Hit</text>
+  <text x="970" y="138" class="table-header">30d Trend</text>
+
+  <line x1="248" y1="148" x2="1168" y2="148" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+
+  <!-- Row 1: Backend (hover hint row) -->
+  <rect x="237" y="149" width="942" height="32" rx="0" fill="#232320"/>
+  <text x="252" y="170" class="table-cell-bold">Backend</text>
+  <text x="390" y="170" class="table-cell">4,230</text>
+  <text x="500" y="170" class="table-cell">$1,204</text>
+  <text x="600" y="170" class="table-cell">89%</text>
+  <text x="720" y="170" class="table-cell">$0.28</text>
+  <text x="850" y="170" class="table-cell">67%</text>
+  <polyline points="970,172 980,170 990,168 1000,166 1010,162 1020,158 1030,154" fill="none" stroke="#218b30" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- Row 2: Frontend (alternating) -->
+  <rect x="237" y="181" width="942" height="32" rx="0" fill="rgba(246,245,243,0.03)"/>
+  <text x="252" y="202" class="table-cell-bold">Frontend</text>
+  <text x="390" y="202" class="table-cell">3,102</text>
+  <text x="500" y="202" class="table-cell">$1,456</text>
+  <text x="600" y="202" class="table-cell">84%</text>
+  <text x="720" y="202" class="table-cell">$0.47</text>
+  <text x="850" y="202" class="table-cell-error">23%</text>
+  <polyline points="970,196 980,198 990,201 1000,204 1010,208 1020,212 1030,216" fill="none" stroke="#d1003e" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- Row 3: Platform -->
+  <rect x="237" y="213" width="942" height="32" rx="0" fill="transparent"/>
+  <text x="252" y="234" class="table-cell-bold">Platform</text>
+  <text x="390" y="234" class="table-cell">2,891</text>
+  <text x="500" y="234" class="table-cell">$892</text>
+  <text x="600" y="234" class="table-cell">91%</text>
+  <text x="720" y="234" class="table-cell">$0.31</text>
+  <text x="850" y="234" class="table-cell">71%</text>
+  <polyline points="970,232 980,231 990,233 1000,231 1010,232 1020,231 1030,232" fill="none" stroke="#9f9e9c" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- Row 4: Data (alternating) -->
+  <rect x="237" y="245" width="942" height="32" rx="0" fill="rgba(246,245,243,0.03)"/>
+  <text x="252" y="266" class="table-cell-bold">Data</text>
+  <text x="390" y="266" class="table-cell">1,456</text>
+  <text x="500" y="266" class="table-cell">$423</text>
+  <text x="600" y="266" class="table-cell">86%</text>
+  <text x="720" y="266" class="table-cell">$0.29</text>
+  <text x="850" y="266" class="table-cell">55%</text>
+  <polyline points="970,268 980,266 990,264 1000,262 1010,258 1020,254 1030,250" fill="none" stroke="#218b30" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- Row 5: Mobile -->
+  <rect x="237" y="277" width="942" height="32" rx="0" fill="transparent"/>
+  <text x="252" y="298" class="table-cell-bold">Mobile</text>
+  <text x="390" y="298" class="table-cell">890</text>
+  <text x="500" y="298" class="table-cell">$189</text>
+  <text x="600" y="298" class="table-cell">90%</text>
+  <text x="720" y="298" class="table-cell">$0.21</text>
+  <text x="850" y="298" class="table-cell-warn">48%</text>
+  <polyline points="970,296 980,297 990,295 1000,296 1010,295 1020,296 1030,295" fill="none" stroke="#9f9e9c" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- Row 6: DevOps (alternating) -->
+  <rect x="237" y="309" width="942" height="32" rx="0" fill="rgba(246,245,243,0.03)"/>
+  <text x="252" y="330" class="table-cell-bold">DevOps</text>
+  <text x="390" y="330" class="table-cell">278</text>
+  <text x="500" y="330" class="table-cell">$67</text>
+  <text x="600" y="330" class="table-cell">93%</text>
+  <text x="720" y="330" class="table-cell">$0.24</text>
+  <text x="850" y="330" class="table-cell">62%</text>
+  <polyline points="970,332 980,330 990,328 1000,326 1010,322 1020,318 1030,314" fill="none" stroke="#218b30" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- ==================== DIVIDER ==================== -->
+  <line x1="236" y1="368" x2="1180" y2="368" stroke="rgba(246,245,243,0.09)" stroke-width="1" stroke-dasharray="6,4"/>
+  <rect x="540" y="358" width="220" height="20" fill="#100f0d"/>
+  <text x="560" y="372" class="divider-label">Team Detail: Backend</text>
+
+  <!-- ==================== TEAM KPI CARDS ==================== -->
+  <!-- Card 1: Sessions -->
+  <rect x="236" y="390" width="180" height="80" rx="12" fill="#151513" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <text x="252" y="414" class="kpi-label">Sessions</text>
+  <text x="252" y="444" class="kpi-value">4,230</text>
+
+  <!-- Card 2: Cost -->
+  <rect x="428" y="390" width="180" height="80" rx="12" fill="#151513" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <text x="444" y="414" class="kpi-label">Cost</text>
+  <text x="444" y="444" class="kpi-value">$1,204</text>
+
+  <!-- Card 3: Users -->
+  <rect x="620" y="390" width="180" height="80" rx="12" fill="#151513" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <text x="636" y="414" class="kpi-label">Users</text>
+  <text x="636" y="444" class="kpi-value">12/14</text>
+  <text x="636" y="460" class="kpi-sub">86%</text>
+
+  <!-- Card 4: Completion -->
+  <rect x="812" y="390" width="180" height="80" rx="12" fill="#151513" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <text x="828" y="414" class="kpi-label">Completion</text>
+  <text x="828" y="444" class="kpi-value">89%</text>
+
+  <!-- Card 5: Cost/Session -->
+  <rect x="1004" y="390" width="176" height="80" rx="12" fill="#151513" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <text x="1020" y="414" class="kpi-label">Cost/Session</text>
+  <text x="1020" y="444" class="kpi-value">$0.28</text>
+
+  <!-- ==================== USER TABLE ==================== -->
+  <rect x="236" y="490" width="944" height="178" rx="12" fill="#151513" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+
+  <!-- User table header -->
+  <text x="252" y="516" class="table-header">User</text>
+  <text x="440" y="516" class="table-header">Sessions</text>
+  <text x="560" y="516" class="table-header">Cost</text>
+  <text x="670" y="516" class="table-header">Completion</text>
+  <text x="790" y="516" class="table-header">Cost/Session</text>
+  <text x="940" y="516" class="table-header">Last Active</text>
+
+  <line x1="248" y1="526" x2="1168" y2="526" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+
+  <!-- User Row 1 -->
+  <text x="252" y="548" class="table-cell-link">alice@acme.com</text>
+  <text x="440" y="548" class="table-cell">512</text>
+  <text x="560" y="548" class="table-cell">$142</text>
+  <text x="670" y="548" class="table-cell">92%</text>
+  <text x="790" y="548" class="table-cell">$0.28</text>
+  <text x="940" y="548" class="table-cell-muted">2h ago</text>
+  <line x1="248" y1="558" x2="1168" y2="558" stroke="rgba(246,245,243,0.05)" stroke-width="1"/>
+
+  <!-- User Row 2 -->
+  <rect x="237" y="559" width="942" height="30" fill="rgba(246,245,243,0.03)"/>
+  <text x="252" y="578" class="table-cell-link">bob@acme.com</text>
+  <text x="440" y="578" class="table-cell">487</text>
+  <text x="560" y="578" class="table-cell">$301</text>
+  <text x="670" y="578" class="table-cell">78%</text>
+  <text x="790" y="578" class="table-cell-warn">$0.62</text>
+  <text x="940" y="578" class="table-cell-muted">1d ago</text>
+  <line x1="248" y1="589" x2="1168" y2="589" stroke="rgba(246,245,243,0.05)" stroke-width="1"/>
+
+  <!-- User Row 3 -->
+  <text x="252" y="608" class="table-cell-link">carol@acme.com</text>
+  <text x="440" y="608" class="table-cell">398</text>
+  <text x="560" y="608" class="table-cell">$98</text>
+  <text x="670" y="608" class="table-cell">94%</text>
+  <text x="790" y="608" class="table-cell">$0.25</text>
+  <text x="940" y="608" class="table-cell-muted">4h ago</text>
+  <line x1="248" y1="618" x2="1168" y2="618" stroke="rgba(246,245,243,0.05)" stroke-width="1"/>
+
+  <!-- User Row 4 -->
+  <rect x="237" y="619" width="942" height="30" fill="rgba(246,245,243,0.03)"/>
+  <text x="252" y="638" class="table-cell-link">dave@acme.com</text>
+  <text x="440" y="638" class="table-cell">312</text>
+  <text x="560" y="638" class="table-cell">$187</text>
+  <text x="670" y="638" class="table-cell">82%</text>
+  <text x="790" y="638" class="table-cell-warn">$0.60</text>
+  <text x="940" y="638" class="table-cell-muted">3h ago</text>
+
+  <!-- ==================== BOTTOM CHARTS ==================== -->
+
+  <!-- Left Chart: Adoption Over Time -->
+  <rect x="236" y="688" width="460" height="340" rx="12" fill="#151513" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <text x="252" y="716" class="chart-title">Adoption Over Time</text>
+
+  <!-- Y-axis labels -->
+  <text x="256" y="752" class="chart-label">14</text>
+  <text x="256" y="792" class="chart-label">10</text>
+  <text x="256" y="832" class="chart-label">6</text>
+  <text x="256" y="872" class="chart-label">2</text>
+  <text x="260" y="912" class="chart-label">0</text>
+
+  <!-- Y-axis grid lines -->
+  <line x1="278" y1="748" x2="676" y2="748" stroke="rgba(246,245,243,0.05)" stroke-width="1"/>
+  <line x1="278" y1="788" x2="676" y2="788" stroke="rgba(246,245,243,0.05)" stroke-width="1"/>
+  <line x1="278" y1="828" x2="676" y2="828" stroke="rgba(246,245,243,0.05)" stroke-width="1"/>
+  <line x1="278" y1="868" x2="676" y2="868" stroke="rgba(246,245,243,0.05)" stroke-width="1"/>
+  <line x1="278" y1="908" x2="676" y2="908" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+
+  <!-- X-axis labels -->
+  <text x="288" y="930" class="chart-label">Day 1</text>
+  <text x="386" y="930" class="chart-label">Day 10</text>
+  <text x="486" y="930" class="chart-label">Day 20</text>
+  <text x="586" y="930" class="chart-label">Day 30</text>
+
+  <!-- Area fill under line -->
+  <polygon points="288,888 302,884 316,880 330,874 344,868 358,860 372,852 386,846 400,840 414,832 428,824 442,816 456,808 470,798 484,788 498,780 512,774 526,768 540,764 554,760 568,756 582,754 596,752 610,750 624,748 638,746 652,744 666,742 666,908 288,908" fill="rgba(195,69,19,0.15)"/>
+
+  <!-- Adoption line -->
+  <polyline points="288,888 302,884 316,880 330,874 344,868 358,860 372,852 386,846 400,840 414,832 428,824 442,816 456,808 470,798 484,788 498,780 512,774 526,768 540,764 554,760 568,756 582,754 596,752 610,750 624,748 638,746 652,744 666,742" fill="none" stroke="#c34513" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Data point dots -->
+  <circle cx="288" cy="888" r="2.5" fill="#c34513"/>
+  <circle cx="386" cy="846" r="2.5" fill="#c34513"/>
+  <circle cx="484" cy="788" r="2.5" fill="#c34513"/>
+  <circle cx="582" cy="754" r="2.5" fill="#c34513"/>
+  <circle cx="666" cy="742" r="2.5" fill="#c34513"/>
+
+  <!-- Label -->
+  <text x="634" y="736" fill="#fda16b" font-size="10" font-weight="600">12 users</text>
+
+  <!-- Right Chart: Model Usage (Donut) -->
+  <rect x="712" y="688" width="468" height="340" rx="12" fill="#151513" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <text x="728" y="716" class="chart-title">Model Usage</text>
+
+  <!-- Donut chart center: 880, 850. Radius: 80 -->
+  <!-- Haiku 45%: 0deg to 162deg -->
+  <!-- Start: (880, 770) -->
+  <!-- End at 162deg: (880 + 80*sin(162), 850 - 80*cos(162)) = (880 + 24.7, 850 + 76.1) = (904.7, 926.1) -->
+  <!-- Sonnet 40%: 162deg to 306deg -->
+  <!-- End at 306deg: (880 + 80*sin(306), 850 - 80*cos(306)) = (880 - 64.7, 850 - 47.0) = (815.3, 803.0) -->
+  <!-- Opus 15%: 306deg to 360deg -->
+
+  <!-- Haiku 45%: blue -->
+  <path d="M 880 770 A 80 80 0 0 1 904.7 926.1 L 880 850 Z" fill="#3b82f6" stroke="#151513" stroke-width="2"/>
+
+  <!-- Sonnet 40%: purple -->
+  <path d="M 904.7 926.1 A 80 80 0 0 1 815.3 803.0 L 880 850 Z" fill="#8b5cf6" stroke="#151513" stroke-width="2"/>
+
+  <!-- Opus 15%: orange -->
+  <path d="M 815.3 803.0 A 80 80 0 0 1 880 770 L 880 850 Z" fill="#c34513" stroke="#151513" stroke-width="2"/>
+
+  <!-- Donut hole -->
+  <circle cx="880" cy="850" r="45" fill="#151513"/>
+  <text x="880" y="846" text-anchor="middle" fill="#f6f5f3" font-size="14" font-weight="700">4,230</text>
+  <text x="880" y="862" text-anchor="middle" fill="#9f9e9c" font-size="10">sessions</text>
+
+  <!-- Legend -->
+  <rect x="996" y="810" width="10" height="10" rx="2" fill="#3b82f6"/>
+  <text x="1012" y="820" class="table-cell">Haiku 45%</text>
+
+  <rect x="996" y="832" width="10" height="10" rx="2" fill="#8b5cf6"/>
+  <text x="1012" y="842" class="table-cell">Sonnet 40%</text>
+
+  <rect x="996" y="854" width="10" height="10" rx="2" fill="#c34513"/>
+  <text x="1012" y="864" class="table-cell">Opus 15%</text>
+
+</svg>

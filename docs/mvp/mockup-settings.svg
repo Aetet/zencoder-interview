@@ -1,0 +1,233 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 850" width="1200" height="850" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
+
+  <!-- Background -->
+  <rect width="1200" height="850" fill="#100f0d"/>
+
+  <!-- ==================== LEFT SIDEBAR (220px) ==================== -->
+  <rect x="0" y="0" width="220" height="850" fill="#131210"/>
+
+  <!-- Logo -->
+  <text x="24" y="38" fill="#f6f5f3" font-size="18" font-weight="700">ZenDash</text>
+  <circle cx="100" cy="33" r="4" fill="#e65c2c"/>
+
+  <!-- Nav Items -->
+  <!-- Overview -->
+  <rect x="8" y="68" width="204" height="38" rx="8" fill="transparent"/>
+  <text x="44" y="92" fill="#9f9e9c" font-size="14">Overview</text>
+
+  <!-- Costs -->
+  <rect x="8" y="110" width="204" height="38" rx="8" fill="transparent"/>
+  <text x="44" y="134" fill="#9f9e9c" font-size="14">Costs</text>
+
+  <!-- Teams -->
+  <rect x="8" y="152" width="204" height="38" rx="8" fill="transparent"/>
+  <text x="44" y="176" fill="#9f9e9c" font-size="14">Teams</text>
+
+  <!-- Settings (Active) -->
+  <rect x="0" y="194" width="3" height="38" fill="#c34513"/>
+  <rect x="8" y="194" width="204" height="38" rx="8" fill="#232320"/>
+  <text x="44" y="218" fill="#fda16b" font-size="14" font-weight="600">Settings</text>
+
+  <!-- Bottom: Org Name -->
+  <text x="24" y="830" fill="#9f9e9c" font-size="12">Acme Corp</text>
+
+  <!-- ==================== TOP BAR (56px) ==================== -->
+  <rect x="220" y="0" width="980" height="56" fill="#151513"/>
+  <line x1="220" y1="56" x2="1200" y2="56" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+
+  <!-- Breadcrumb -->
+  <text x="244" y="33" fill="#9f9e9c" font-size="13">Dashboard / Settings</text>
+  <text x="380" y="33" fill="#f6f5f3" font-size="13" font-weight="500">Settings</text>
+
+  <!-- ==================== MAIN CONTENT ==================== -->
+  <!-- Two columns with 16px gap -->
+
+  <!-- ========== LEFT COLUMN: Budget Configuration ========== -->
+  <rect x="236" y="72" width="468" height="762" rx="12" fill="#151513" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <text x="256" y="104" fill="#f6f5f3" font-size="16" font-weight="700">Budget Configuration</text>
+
+  <!-- Section 1: Organization Budget -->
+  <text x="256" y="136" fill="#e5e4e2" font-size="14" font-weight="500">Organization Budget</text>
+
+  <!-- Monthly Budget Input -->
+  <text x="256" y="162" fill="#9f9e9c" font-size="12">Monthly Budget</text>
+  <rect x="256" y="170" width="300" height="38" rx="8" fill="#1f1e1b" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <text x="272" y="194" fill="#f6f5f3" font-size="14">$6,000</text>
+  <text x="518" y="194" fill="#9f9e9c" font-size="12" font-weight="500">USD</text>
+  <!-- Helper text -->
+  <text x="256" y="224" fill="#9f9e9c" font-size="12">Current spend: $4,231 (70.5%)</text>
+
+  <!-- Section 2: Alert Thresholds -->
+  <text x="256" y="256" fill="#e5e4e2" font-size="14" font-weight="500">Alert Thresholds</text>
+
+  <!-- Threshold row: 50% -->
+  <rect x="256" y="268" width="428" height="36" rx="8" fill="transparent"/>
+  <!-- Checkbox checked -->
+  <rect x="256" y="276" width="18" height="18" rx="4" fill="#c34513"/>
+  <polyline points="260,286 264,290 270,280" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="284" y="290" fill="#f6f5f3" font-size="13">50% — Notify at $3,000</text>
+  <!-- Toggle ON -->
+  <rect x="644" y="277" width="36" height="18" rx="9" fill="#c34513"/>
+  <circle cx="670" cy="286" r="7" fill="#ffffff"/>
+
+  <!-- Threshold row: 75% -->
+  <rect x="256" y="310" width="428" height="36" rx="8" fill="transparent"/>
+  <rect x="256" y="318" width="18" height="18" rx="4" fill="#c34513"/>
+  <polyline points="260,328 264,332 270,322" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="284" y="332" fill="#f6f5f3" font-size="13">75% — Notify at $4,500</text>
+  <rect x="644" y="319" width="36" height="18" rx="9" fill="#c34513"/>
+  <circle cx="670" cy="328" r="7" fill="#ffffff"/>
+
+  <!-- Threshold row: 90% -->
+  <rect x="256" y="352" width="428" height="36" rx="8" fill="transparent"/>
+  <rect x="256" y="360" width="18" height="18" rx="4" fill="#c34513"/>
+  <polyline points="260,370 264,374 270,364" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="284" y="374" fill="#f6f5f3" font-size="13">90% — Notify at $5,400</text>
+  <rect x="644" y="361" width="36" height="18" rx="9" fill="#c34513"/>
+  <circle cx="670" cy="370" r="7" fill="#ffffff"/>
+
+  <!-- Threshold row: 100% -->
+  <rect x="256" y="394" width="428" height="36" rx="8" fill="transparent"/>
+  <rect x="256" y="402" width="18" height="18" rx="4" fill="#c34513"/>
+  <polyline points="260,412 264,416 270,406" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="284" y="416" fill="#f6f5f3" font-size="13">100% — Notify at $6,000</text>
+  <rect x="644" y="403" width="36" height="18" rx="9" fill="#c34513"/>
+  <circle cx="670" cy="412" r="7" fill="#ffffff"/>
+
+  <!-- Section 3: Team Budgets -->
+  <text x="256" y="458" fill="#e5e4e2" font-size="14" font-weight="500">Team Budgets</text>
+
+  <!-- Table Header -->
+  <text x="256" y="484" fill="#9f9e9c" font-size="11" font-weight="600" letter-spacing="0.5">TEAM</text>
+  <text x="356" y="484" fill="#9f9e9c" font-size="11" font-weight="600" letter-spacing="0.5">BUDGET</text>
+  <text x="436" y="484" fill="#9f9e9c" font-size="11" font-weight="600" letter-spacing="0.5">CURRENT</text>
+  <text x="536" y="484" fill="#9f9e9c" font-size="11" font-weight="600" letter-spacing="0.5">STATUS</text>
+  <line x1="256" y1="490" x2="684" y2="490" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+
+  <!-- Row: Backend — 80% warning -->
+  <text x="256" y="514" fill="#f6f5f3" font-size="13">Backend</text>
+  <text x="356" y="514" fill="#f6f5f3" font-size="13">$1,500</text>
+  <text x="436" y="514" fill="#f6f5f3" font-size="13">$1,204</text>
+  <rect x="536" y="507" width="100" height="6" rx="3" fill="#232320"/>
+  <rect x="536" y="507" width="80" height="6" rx="3" fill="#ffb900"/>
+  <line x1="256" y1="526" x2="684" y2="526" stroke="rgba(246,245,243,0.05)" stroke-width="1"/>
+
+  <!-- Row: Frontend — 121% error + Over badge -->
+  <text x="256" y="546" fill="#f6f5f3" font-size="13">Frontend</text>
+  <text x="356" y="546" fill="#f6f5f3" font-size="13">$1,200</text>
+  <text x="436" y="546" fill="#f6f5f3" font-size="13">$1,456</text>
+  <rect x="536" y="539" width="100" height="6" rx="3" fill="#232320"/>
+  <rect x="536" y="539" width="100" height="6" rx="3" fill="#d1003e"/>
+  <rect x="642" y="536" width="38" height="18" rx="9" fill="#d1003e"/>
+  <text x="650" y="549" fill="#f6f5f3" font-size="10" font-weight="500">Over</text>
+  <line x1="256" y1="558" x2="684" y2="558" stroke="rgba(246,245,243,0.05)" stroke-width="1"/>
+
+  <!-- Row: Platform — 89% warning -->
+  <text x="256" y="578" fill="#f6f5f3" font-size="13">Platform</text>
+  <text x="356" y="578" fill="#f6f5f3" font-size="13">$1,000</text>
+  <text x="436" y="578" fill="#f6f5f3" font-size="13">$892</text>
+  <rect x="536" y="571" width="100" height="6" rx="3" fill="#232320"/>
+  <rect x="536" y="571" width="89" height="6" rx="3" fill="#ffb900"/>
+  <line x1="256" y1="590" x2="684" y2="590" stroke="rgba(246,245,243,0.05)" stroke-width="1"/>
+
+  <!-- Row: Data — 85% warning -->
+  <text x="256" y="610" fill="#f6f5f3" font-size="13">Data</text>
+  <text x="356" y="610" fill="#f6f5f3" font-size="13">$500</text>
+  <text x="436" y="610" fill="#f6f5f3" font-size="13">$423</text>
+  <rect x="536" y="603" width="100" height="6" rx="3" fill="#232320"/>
+  <rect x="536" y="603" width="85" height="6" rx="3" fill="#ffb900"/>
+  <line x1="256" y1="622" x2="684" y2="622" stroke="rgba(246,245,243,0.05)" stroke-width="1"/>
+
+  <!-- Row: Mobile — 47% success -->
+  <text x="256" y="642" fill="#f6f5f3" font-size="13">Mobile</text>
+  <text x="356" y="642" fill="#f6f5f3" font-size="13">$400</text>
+  <text x="436" y="642" fill="#f6f5f3" font-size="13">$189</text>
+  <rect x="536" y="635" width="100" height="6" rx="3" fill="#232320"/>
+  <rect x="536" y="635" width="47" height="6" rx="3" fill="#218b30"/>
+  <line x1="256" y1="654" x2="684" y2="654" stroke="rgba(246,245,243,0.05)" stroke-width="1"/>
+
+  <!-- Row: DevOps — 34% success -->
+  <text x="256" y="674" fill="#f6f5f3" font-size="13">DevOps</text>
+  <text x="356" y="674" fill="#f6f5f3" font-size="13">$200</text>
+  <text x="436" y="674" fill="#f6f5f3" font-size="13">$67</text>
+  <rect x="536" y="667" width="100" height="6" rx="3" fill="#232320"/>
+  <rect x="536" y="667" width="34" height="6" rx="3" fill="#218b30"/>
+
+  <!-- Save Changes Button -->
+  <rect x="256" y="700" width="428" height="44" rx="12" fill="#c34513"/>
+  <text x="428" y="727" fill="#f6f5f3" font-size="14" font-weight="600" text-anchor="middle">Save Changes</text>
+
+  <!-- ========== RIGHT COLUMN: Notifications ========== -->
+  <rect x="720" y="72" width="456" height="762" rx="12" fill="#151513" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <text x="740" y="104" fill="#f6f5f3" font-size="16" font-weight="700">Notifications</text>
+
+  <!-- Section 1: Alert Delivery -->
+  <text x="740" y="136" fill="#e5e4e2" font-size="14" font-weight="500">Alert Delivery</text>
+
+  <!-- Email notifications — toggle ON -->
+  <rect x="740" y="150" width="416" height="38" rx="8" fill="transparent"/>
+  <text x="740" y="174" fill="#f6f5f3" font-size="13">Email notifications</text>
+  <rect x="1116" y="161" width="36" height="18" rx="9" fill="#c34513"/>
+  <circle cx="1142" cy="170" r="7" fill="#ffffff"/>
+
+  <!-- In-app notifications — toggle ON -->
+  <rect x="740" y="194" width="416" height="38" rx="8" fill="transparent"/>
+  <text x="740" y="218" fill="#f6f5f3" font-size="13">In-app notifications</text>
+  <rect x="1116" y="205" width="36" height="18" rx="9" fill="#c34513"/>
+  <circle cx="1142" cy="214" r="7" fill="#ffffff"/>
+
+  <!-- Slack integration — toggle OFF + Coming soon badge -->
+  <rect x="740" y="238" width="416" height="38" rx="8" fill="transparent"/>
+  <text x="740" y="262" fill="#9f9e9c" font-size="13">Slack integration</text>
+  <rect x="866" y="250" width="84" height="22" rx="11" fill="#232320"/>
+  <text x="878" y="265" fill="#9f9e9c" font-size="10">Coming soon</text>
+  <rect x="1116" y="249" width="36" height="18" rx="9" fill="#232320"/>
+  <circle cx="1126" cy="258" r="7" fill="#9f9e9c"/>
+
+  <!-- Section 2: Anomaly Detection -->
+  <text x="740" y="306" fill="#e5e4e2" font-size="14" font-weight="500">Anomaly Detection</text>
+
+  <!-- Enabled toggle -->
+  <rect x="740" y="318" width="416" height="38" rx="8" fill="transparent"/>
+  <text x="740" y="342" fill="#f6f5f3" font-size="13">Enabled</text>
+  <rect x="1116" y="329" width="36" height="18" rx="9" fill="#c34513"/>
+  <circle cx="1142" cy="338" r="7" fill="#ffffff"/>
+
+  <!-- Sensitivity dropdown -->
+  <text x="740" y="378" fill="#9f9e9c" font-size="12">Sensitivity</text>
+  <rect x="740" y="386" width="200" height="38" rx="8" fill="#1f1e1b" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <text x="756" y="410" fill="#f6f5f3" font-size="13">Medium</text>
+  <!-- Dropdown chevron -->
+  <polyline points="916,402 922,408 928,402" fill="none" stroke="#9f9e9c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Helper text -->
+  <text x="740" y="442" fill="#9f9e9c" font-size="12">Alerts when daily spend exceeds 2x rolling average</text>
+
+  <!-- Section 3: Recent Alerts -->
+  <text x="740" y="478" fill="#e5e4e2" font-size="14" font-weight="500">Recent Alerts</text>
+
+  <!-- Timeline line -->
+  <line x1="752" y1="498" x2="752" y2="660" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+
+  <!-- Alert 1: Critical -->
+  <circle cx="752" cy="510" r="5" fill="#d1003e"/>
+  <text x="770" y="506" fill="#9f9e9c" font-size="11">Apr 2</text>
+  <text x="770" y="522" fill="#f6f5f3" font-size="13">Frontend exceeded budget ($1,456 / $1,200)</text>
+  <rect x="1080" y="500" width="60" height="22" rx="11" fill="#d1003e"/>
+  <text x="1091" y="515" fill="#f6f5f3" font-size="10" font-weight="500">Critical</text>
+
+  <!-- Alert 2: Warning -->
+  <circle cx="752" cy="560" r="5" fill="#ffb900"/>
+  <text x="770" y="556" fill="#9f9e9c" font-size="11">Apr 1</text>
+  <text x="770" y="572" fill="#f6f5f3" font-size="13">Org reached 50% threshold ($3,000 / $6,000)</text>
+  <rect x="1076" y="550" width="64" height="22" rx="11" fill="#ffb900"/>
+  <text x="1087" y="565" fill="#100f0d" font-size="10" font-weight="500">Warning</text>
+
+  <!-- Alert 3: Anomaly -->
+  <circle cx="752" cy="610" r="5" fill="#fda16b"/>
+  <text x="770" y="606" fill="#9f9e9c" font-size="11">Mar 28</text>
+  <text x="770" y="622" fill="#f6f5f3" font-size="13">Backend spend spike (+340%)</text>
+  <rect x="1076" y="600" width="64" height="22" rx="11" fill="#fda16b"/>
+  <text x="1087" y="615" fill="#100f0d" font-size="10" font-weight="500">Anomaly</text>
+
+</svg>

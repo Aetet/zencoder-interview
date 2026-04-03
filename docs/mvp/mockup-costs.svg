@@ -1,0 +1,345 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1100" width="1200" height="1100" font-family="Inter, -apple-system, system-ui, sans-serif">
+  <defs>
+    <clipPath id="budgetClip"><rect x="240" y="702" width="936" height="12" rx="6"/></clipPath>
+    <clipPath id="gaugeClip"><circle cx="870" cy="340" r="54"/></clipPath>
+  </defs>
+
+  <!-- ==================== BACKGROUND ==================== -->
+  <rect width="1200" height="1100" fill="#100f0d"/>
+
+  <!-- ==================== LEFT SIDEBAR ==================== -->
+  <rect x="0" y="0" width="220" height="1100" fill="#131210"/>
+
+  <!-- Logo -->
+  <text x="24" y="40" font-size="18" font-weight="500" fill="#f6f5f3" letter-spacing="-0.3">Zen</text>
+  <text x="62" y="40" font-size="18" font-weight="500" fill="#f6f5f3" letter-spacing="-0.3">Dash</text>
+  <circle cx="57" cy="35" r="3" fill="#e65c2c"/>
+
+  <!-- Nav Items -->
+  <!-- Overview -->
+  <rect x="12" y="68" width="196" height="40" rx="8" fill="transparent"/>
+  <text x="44" y="93" font-size="13" fill="#9f9e9c" font-weight="400">Overview</text>
+
+  <!-- Costs (active) -->
+  <rect x="12" y="112" width="196" height="40" rx="8" fill="#232320"/>
+  <rect x="12" y="118" width="3" height="28" rx="1.5" fill="#fda16b"/>
+  <text x="44" y="137" font-size="13" fill="#fda16b" font-weight="500">Costs</text>
+
+  <!-- Teams -->
+  <rect x="12" y="156" width="196" height="40" rx="8" fill="transparent"/>
+  <text x="44" y="181" font-size="13" fill="#9f9e9c" font-weight="400">Teams</text>
+
+  <!-- Settings -->
+  <rect x="12" y="200" width="196" height="40" rx="8" fill="transparent"/>
+  <text x="44" y="225" font-size="13" fill="#9f9e9c" font-weight="400">Settings</text>
+
+  <!-- Bottom org -->
+  <text x="24" y="1078" font-size="12" fill="#9f9e9c" font-weight="400">Acme Corp</text>
+
+  <!-- ==================== FILTER BAR ==================== -->
+  <rect x="220" y="0" width="980" height="56" fill="#151513"/>
+  <line x1="220" y1="56" x2="1200" y2="56" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+
+  <!-- Time pills -->
+  <rect x="240" y="14" width="40" height="28" rx="6" fill="transparent"/>
+  <text x="251" y="33" font-size="12" fill="#9f9e9c">7d</text>
+
+  <rect x="288" y="14" width="44" height="28" rx="6" fill="#232320"/>
+  <text x="299" y="33" font-size="12" fill="#f6f5f3" font-weight="500">30d</text>
+
+  <rect x="340" y="14" width="44" height="28" rx="6" fill="transparent"/>
+  <text x="351" y="33" font-size="12" fill="#9f9e9c">90d</text>
+
+  <!-- Dropdowns -->
+  <rect x="420" y="14" width="110" height="28" rx="6" fill="transparent" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <text x="434" y="33" font-size="12" fill="#9f9e9c">Team: All &#9662;</text>
+
+  <rect x="540" y="14" width="110" height="28" rx="6" fill="transparent" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <text x="554" y="33" font-size="12" fill="#9f9e9c">User: All &#9662;</text>
+
+  <rect x="660" y="14" width="120" height="28" rx="6" fill="transparent" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <text x="674" y="33" font-size="12" fill="#9f9e9c">Model: All &#9662;</text>
+
+  <!-- Export CSV -->
+  <rect x="1098" y="14" width="84" height="28" rx="6" fill="transparent" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <text x="1112" y="33" font-size="12" fill="#e5e4e2" font-weight="400">Export CSV</text>
+
+  <!-- ==================== ROW 1: SUMMARY CARDS ==================== -->
+  <!-- Card 1: Total Spend -->
+  <rect x="236" y="72" width="226" height="94" rx="12" fill="#151513" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <text x="252" y="96" font-size="10" fill="#9f9e9c" font-weight="500" letter-spacing="1">TOTAL SPEND</text>
+  <text x="252" y="138" font-size="32" fill="#f6f5f3" font-weight="500">$4,231</text>
+
+  <!-- Card 2: Input Tokens -->
+  <rect x="474" y="72" width="226" height="94" rx="12" fill="#151513" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <circle cx="490" cy="91" r="4" fill="#3b82f6"/>
+  <text x="500" y="96" font-size="10" fill="#9f9e9c" font-weight="500" letter-spacing="1">INPUT TOKENS</text>
+  <text x="490" y="138" font-size="32" fill="#f6f5f3" font-weight="500">28.4M</text>
+  <text x="612" y="138" font-size="14" fill="#9f9e9c">$2,840</text>
+
+  <!-- Card 3: Output Tokens -->
+  <rect x="712" y="72" width="226" height="94" rx="12" fill="#151513" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <circle cx="728" cy="91" r="4" fill="#8b5cf6"/>
+  <text x="738" y="96" font-size="10" fill="#9f9e9c" font-weight="500" letter-spacing="1">OUTPUT TOKENS</text>
+  <text x="728" y="138" font-size="32" fill="#f6f5f3" font-weight="500">6.2M</text>
+  <text x="832" y="138" font-size="14" fill="#9f9e9c">$930</text>
+
+  <!-- Card 4: Cache Reads -->
+  <rect x="950" y="72" width="234" height="94" rx="12" fill="#151513" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <circle cx="966" cy="91" r="4" fill="#218b30"/>
+  <text x="976" y="96" font-size="10" fill="#9f9e9c" font-weight="500" letter-spacing="1">CACHE READS</text>
+  <text x="966" y="138" font-size="32" fill="#f6f5f3" font-weight="500">14.1M</text>
+  <text x="1066" y="130" font-size="14" fill="#9f9e9c">$141</text>
+  <!-- Saved badge -->
+  <rect x="1082" y="140" width="92" height="22" rx="11" fill="#218b30"/>
+  <text x="1096" y="155" font-size="10" fill="#ffffff" font-weight="500">Saved $1,269</text>
+
+  <!-- ==================== ROW 2: TWO PANELS ==================== -->
+  <!-- Left: Token Spend Over Time -->
+  <rect x="236" y="182" width="490" height="310" rx="12" fill="#151513" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <text x="252" y="210" font-size="14" fill="#e5e4e2" font-weight="500">Token Spend Over Time</text>
+
+  <!-- Toggle pills -->
+  <rect x="440" y="194" width="64" height="24" rx="6" fill="#232320"/>
+  <text x="450" y="210" font-size="11" fill="#f6f5f3" font-weight="500">By Team</text>
+  <rect x="510" y="194" width="68" height="24" rx="6" fill="transparent"/>
+  <text x="519" y="210" font-size="11" fill="#9f9e9c">By Model</text>
+  <rect x="584" y="194" width="60" height="24" rx="6" fill="transparent"/>
+  <text x="595" y="210" font-size="11" fill="#9f9e9c">By User</text>
+
+  <!-- Y-axis -->
+  <text x="256" y="242" font-size="10" fill="#9f9e9c">$600</text>
+  <text x="256" y="282" font-size="10" fill="#9f9e9c">$400</text>
+  <text x="256" y="322" font-size="10" fill="#9f9e9c">$200</text>
+  <text x="256" y="362" font-size="10" fill="#9f9e9c">$0</text>
+
+  <!-- Grid lines -->
+  <line x1="288" y1="238" x2="710" y2="238" stroke="rgba(246,245,243,0.05)" stroke-width="1"/>
+  <line x1="288" y1="278" x2="710" y2="278" stroke="rgba(246,245,243,0.05)" stroke-width="1"/>
+  <line x1="288" y1="318" x2="710" y2="318" stroke="rgba(246,245,243,0.05)" stroke-width="1"/>
+  <line x1="288" y1="358" x2="710" y2="358" stroke="rgba(246,245,243,0.05)" stroke-width="1"/>
+
+  <!-- Stacked bars (7 periods) -->
+  <!-- Bar 1 -->
+  <rect x="300" y="296" width="40" height="62" fill="#3b82f6" rx="2"/>
+  <rect x="300" y="270" width="40" height="26" fill="#8b5cf6"/>
+  <rect x="300" y="254" width="40" height="16" fill="#06b6d4"/>
+  <rect x="300" y="246" width="40" height="8" fill="#218b30"/>
+  <!-- Bar 2 -->
+  <rect x="356" y="284" width="40" height="74" fill="#3b82f6" rx="2"/>
+  <rect x="356" y="258" width="40" height="26" fill="#8b5cf6"/>
+  <rect x="356" y="246" width="40" height="12" fill="#06b6d4"/>
+  <rect x="356" y="238" width="40" height="8" fill="#218b30"/>
+  <!-- Bar 3 -->
+  <rect x="412" y="274" width="40" height="84" fill="#3b82f6" rx="2"/>
+  <rect x="412" y="252" width="40" height="22" fill="#8b5cf6"/>
+  <rect x="412" y="240" width="40" height="12" fill="#06b6d4"/>
+  <rect x="412" y="232" width="40" height="8" fill="#218b30"/>
+  <!-- Bar 4 -->
+  <rect x="468" y="304" width="40" height="54" fill="#3b82f6" rx="2"/>
+  <rect x="468" y="280" width="40" height="24" fill="#8b5cf6"/>
+  <rect x="468" y="268" width="40" height="12" fill="#06b6d4"/>
+  <rect x="468" y="262" width="40" height="6" fill="#218b30"/>
+  <!-- Bar 5 -->
+  <rect x="524" y="288" width="40" height="70" fill="#3b82f6" rx="2"/>
+  <rect x="524" y="262" width="40" height="26" fill="#8b5cf6"/>
+  <rect x="524" y="248" width="40" height="14" fill="#06b6d4"/>
+  <rect x="524" y="240" width="40" height="8" fill="#218b30"/>
+  <!-- Bar 6 -->
+  <rect x="580" y="278" width="40" height="80" fill="#3b82f6" rx="2"/>
+  <rect x="580" y="250" width="40" height="28" fill="#8b5cf6"/>
+  <rect x="580" y="236" width="40" height="14" fill="#06b6d4"/>
+  <rect x="580" y="228" width="40" height="8" fill="#218b30"/>
+  <!-- Bar 7 -->
+  <rect x="636" y="300" width="40" height="58" fill="#3b82f6" rx="2"/>
+  <rect x="636" y="276" width="40" height="24" fill="#8b5cf6"/>
+  <rect x="636" y="264" width="40" height="12" fill="#06b6d4"/>
+  <rect x="636" y="258" width="40" height="6" fill="#218b30"/>
+
+  <!-- X-axis labels -->
+  <text x="310" y="376" font-size="10" fill="#9f9e9c" text-anchor="middle">Mar 4</text>
+  <text x="366" y="376" font-size="10" fill="#9f9e9c" text-anchor="middle">Mar 9</text>
+  <text x="422" y="376" font-size="10" fill="#9f9e9c" text-anchor="middle">Mar 14</text>
+  <text x="478" y="376" font-size="10" fill="#9f9e9c" text-anchor="middle">Mar 19</text>
+  <text x="534" y="376" font-size="10" fill="#9f9e9c" text-anchor="middle">Mar 24</text>
+  <text x="590" y="376" font-size="10" fill="#9f9e9c" text-anchor="middle">Mar 29</text>
+  <text x="646" y="376" font-size="10" fill="#9f9e9c" text-anchor="middle">Apr 3</text>
+
+  <!-- Legend -->
+  <rect x="288" y="392" width="10" height="10" rx="2" fill="#3b82f6"/>
+  <text x="302" y="401" font-size="10" fill="#9f9e9c">Input</text>
+  <rect x="340" y="392" width="10" height="10" rx="2" fill="#8b5cf6"/>
+  <text x="354" y="401" font-size="10" fill="#9f9e9c">Output</text>
+  <rect x="400" y="392" width="10" height="10" rx="2" fill="#06b6d4"/>
+  <text x="414" y="401" font-size="10" fill="#9f9e9c">Cache Create</text>
+  <rect x="494" y="392" width="10" height="10" rx="2" fill="#218b30"/>
+  <text x="508" y="401" font-size="10" fill="#9f9e9c">Cache Read</text>
+
+  <!-- Right: Cache Efficiency -->
+  <rect x="738" y="182" width="446" height="310" rx="12" fill="#151513" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <text x="754" y="210" font-size="14" fill="#e5e4e2" font-weight="500">Cache Efficiency</text>
+
+  <!-- Gauge ring -->
+  <circle cx="870" cy="290" r="54" fill="none" stroke="#232320" stroke-width="10"/>
+  <circle cx="870" cy="290" r="54" fill="none" stroke="#218b30" stroke-width="10"
+          stroke-dasharray="207 339" stroke-linecap="round"
+          transform="rotate(-90 870 290)"/>
+  <text x="870" y="296" font-size="28" fill="#f6f5f3" font-weight="500" text-anchor="middle">61%</text>
+  <text x="870" y="312" font-size="10" fill="#9f9e9c" text-anchor="middle">Cache Hit Rate</text>
+
+  <!-- Team bars -->
+  <!-- Backend 67% -->
+  <text x="960" y="248" font-size="11" fill="#9f9e9c">Backend</text>
+  <rect x="1024" y="238" width="120" height="12" rx="3" fill="#232320"/>
+  <rect x="1024" y="238" width="80" height="12" rx="3" fill="#218b30"/>
+  <text x="1150" y="249" font-size="11" fill="#f6f5f3">67%</text>
+
+  <!-- Platform 71% -->
+  <text x="960" y="272" font-size="11" fill="#9f9e9c">Platform</text>
+  <rect x="1024" y="262" width="120" height="12" rx="3" fill="#232320"/>
+  <rect x="1024" y="262" width="85" height="12" rx="3" fill="#218b30"/>
+  <text x="1150" y="273" font-size="11" fill="#f6f5f3">71%</text>
+
+  <!-- Data 55% -->
+  <text x="960" y="296" font-size="11" fill="#9f9e9c">Data</text>
+  <rect x="1024" y="286" width="120" height="12" rx="3" fill="#232320"/>
+  <rect x="1024" y="286" width="66" height="12" rx="3" fill="#ffb900"/>
+  <text x="1150" y="297" font-size="11" fill="#f6f5f3">55%</text>
+
+  <!-- Mobile 48% -->
+  <text x="960" y="320" font-size="11" fill="#9f9e9c">Mobile</text>
+  <rect x="1024" y="310" width="120" height="12" rx="3" fill="#232320"/>
+  <rect x="1024" y="310" width="58" height="12" rx="3" fill="#ffb900"/>
+  <text x="1150" y="321" font-size="11" fill="#f6f5f3">48%</text>
+
+  <!-- Frontend 23% -->
+  <text x="960" y="344" font-size="11" fill="#9f9e9c">Frontend</text>
+  <rect x="1024" y="334" width="120" height="12" rx="3" fill="#232320"/>
+  <rect x="1024" y="334" width="28" height="12" rx="3" fill="#d1003e"/>
+  <text x="1150" y="345" font-size="11" fill="#f6f5f3">23%</text>
+
+  <!-- Green callout -->
+  <rect x="754" y="460" width="414" height="18" rx="0" fill="transparent"/>
+  <rect x="754" y="368" width="2" height="28" rx="1" fill="#218b30"/>
+  <text x="768" y="387" font-size="12" fill="#218b30" font-weight="400">Cache saved your org $1,269 this period</text>
+
+  <!-- ==================== ROW 3: BUDGET TRACKER ==================== -->
+  <rect x="236" y="508" width="948" height="140" rx="12" fill="#151513" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <text x="252" y="536" font-size="14" fill="#e5e4e2" font-weight="500">Budget Tracker</text>
+
+  <!-- Labels above bar -->
+  <text x="252" y="560" font-size="13" fill="#f6f5f3" font-weight="400">$4,231 / $6,000</text>
+  <text x="1160" y="560" font-size="13" fill="#f6f5f3" font-weight="400" text-anchor="end">70.5%</text>
+
+  <!-- Progress bar background -->
+  <rect x="252" y="572" width="920" height="12" rx="6" fill="#232320"/>
+  <!-- Progress bar fill (70.5%) = 920 * 0.705 = 648.6 -->
+  <rect x="252" y="572" width="649" height="12" rx="6" fill="#c34513"/>
+  <!-- Projected dashed extension to ~97% = 920*0.97 = 892.4 -->
+  <line x1="901" y1="578" x2="1145" y2="578" stroke="#fda16b" stroke-width="2" stroke-dasharray="6,4" opacity="0.6"/>
+
+  <!-- Threshold markers -->
+  <!-- 50% at 252 + 460 = 712 -->
+  <line x1="712" y1="568" x2="712" y2="588" stroke="#9f9e9c" stroke-width="1"/>
+  <text x="712" y="602" font-size="9" fill="#9f9e9c" text-anchor="middle">50%</text>
+  <!-- 75% at 252 + 690 = 942 -->
+  <line x1="942" y1="568" x2="942" y2="588" stroke="#9f9e9c" stroke-width="1"/>
+  <text x="942" y="602" font-size="9" fill="#9f9e9c" text-anchor="middle">75%</text>
+  <!-- 90% at 252 + 828 = 1080 -->
+  <line x1="1080" y1="568" x2="1080" y2="588" stroke="#9f9e9c" stroke-width="1"/>
+  <text x="1080" y="602" font-size="9" fill="#9f9e9c" text-anchor="middle">90%</text>
+  <!-- 100% at 252 + 920 = 1172 -->
+  <line x1="1172" y1="568" x2="1172" y2="588" stroke="#9f9e9c" stroke-width="1.5"/>
+  <text x="1172" y="602" font-size="9" fill="#9f9e9c" text-anchor="middle">100%</text>
+
+  <!-- Projected label -->
+  <text x="252" y="632" font-size="12" fill="#fda16b" font-weight="400">Projected: $5,840 by month end</text>
+
+  <!-- ==================== ROW 4: TWO FILE TABLES ==================== -->
+  <!-- Left: Most-Read Files -->
+  <rect x="236" y="664" width="466" height="258" rx="12" fill="#151513" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <text x="252" y="692" font-size="14" fill="#e5e4e2" font-weight="500">Most-Read Files</text>
+
+  <!-- Table header -->
+  <text x="252" y="718" font-size="10" fill="#9f9e9c" font-weight="500" letter-spacing="0.8">FILE</text>
+  <text x="488" y="718" font-size="10" fill="#9f9e9c" font-weight="500" letter-spacing="0.8">READS</text>
+  <text x="548" y="718" font-size="10" fill="#9f9e9c" font-weight="500" letter-spacing="0.8">SESSIONS</text>
+  <text x="636" y="718" font-size="10" fill="#9f9e9c" font-weight="500" letter-spacing="0.8">TOKEN COST</text>
+  <line x1="252" y1="726" x2="686" y2="726" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+
+  <!-- Row 1 -->
+  <text x="252" y="748" font-size="11" fill="#fda16b" font-family="monospace">src/services/auth/session.ts</text>
+  <text x="496" y="748" font-size="11" fill="#f6f5f3">342</text>
+  <text x="564" y="748" font-size="11" fill="#f6f5f3">89</text>
+  <text x="644" y="748" font-size="11" fill="#f6f5f3">$284</text>
+
+  <!-- Row 2 (alt bg) -->
+  <rect x="248" y="756" width="442" height="24" rx="0" fill="rgba(246,245,243,0.03)"/>
+  <text x="252" y="774" font-size="11" fill="#fda16b" font-family="monospace">src/components/Dashboard.tsx</text>
+  <text x="496" y="774" font-size="11" fill="#f6f5f3">287</text>
+  <text x="564" y="774" font-size="11" fill="#f6f5f3">72</text>
+  <text x="644" y="774" font-size="11" fill="#f6f5f3">$231</text>
+
+  <!-- Row 3 -->
+  <text x="252" y="800" font-size="11" fill="#fda16b" font-family="monospace">lib/db/models/user.py</text>
+  <text x="496" y="800" font-size="11" fill="#f6f5f3">256</text>
+  <text x="564" y="800" font-size="11" fill="#f6f5f3">64</text>
+  <text x="644" y="800" font-size="11" fill="#f6f5f3">$198</text>
+
+  <!-- Row 4 (alt bg) -->
+  <rect x="248" y="808" width="442" height="24" rx="0" fill="rgba(246,245,243,0.03)"/>
+  <text x="252" y="826" font-size="11" fill="#fda16b" font-family="monospace">src/api/routes/billing.ts</text>
+  <text x="496" y="826" font-size="11" fill="#f6f5f3">198</text>
+  <text x="564" y="826" font-size="11" fill="#f6f5f3">51</text>
+  <text x="644" y="826" font-size="11" fill="#f6f5f3">$167</text>
+
+  <!-- Row 5 -->
+  <text x="252" y="852" font-size="11" fill="#fda16b" font-family="monospace">config/environments/prod.yml</text>
+  <text x="496" y="852" font-size="11" fill="#f6f5f3">184</text>
+  <text x="564" y="852" font-size="11" fill="#f6f5f3">47</text>
+  <text x="644" y="852" font-size="11" fill="#f6f5f3">$142</text>
+
+  <!-- Right: Most-Edited Files -->
+  <rect x="714" y="664" width="470" height="258" rx="12" fill="#151513" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+  <text x="730" y="692" font-size="14" fill="#e5e4e2" font-weight="500">Most-Edited Files</text>
+
+  <!-- Table header -->
+  <text x="730" y="718" font-size="10" fill="#9f9e9c" font-weight="500" letter-spacing="0.8">FILE</text>
+  <text x="966" y="718" font-size="10" fill="#9f9e9c" font-weight="500" letter-spacing="0.8">EDITS</text>
+  <text x="1024" y="718" font-size="10" fill="#9f9e9c" font-weight="500" letter-spacing="0.8">SESSIONS</text>
+  <text x="1112" y="718" font-size="10" fill="#9f9e9c" font-weight="500" letter-spacing="0.8">CHURN</text>
+  <line x1="730" y1="726" x2="1168" y2="726" stroke="rgba(246,245,243,0.09)" stroke-width="1"/>
+
+  <!-- Row 1 -->
+  <text x="730" y="748" font-size="11" fill="#fda16b" font-family="monospace">src/services/auth/session.ts</text>
+  <text x="974" y="748" font-size="11" fill="#f6f5f3">127</text>
+  <text x="1042" y="748" font-size="11" fill="#f6f5f3">34</text>
+  <text x="1120" y="748" font-size="11" fill="#d1003e">4.2x</text>
+
+  <!-- Row 2 (alt bg) -->
+  <rect x="726" y="756" width="446" height="24" rx="0" fill="rgba(246,245,243,0.03)"/>
+  <text x="730" y="774" font-size="11" fill="#fda16b" font-family="monospace">src/api/routes/billing.ts</text>
+  <text x="974" y="774" font-size="11" fill="#f6f5f3">98</text>
+  <text x="1042" y="774" font-size="11" fill="#f6f5f3">28</text>
+  <text x="1120" y="774" font-size="11" fill="#d1003e">3.1x</text>
+
+  <!-- Row 3 -->
+  <text x="730" y="800" font-size="11" fill="#fda16b" font-family="monospace">tests/integration/auth.test.ts</text>
+  <text x="974" y="800" font-size="11" fill="#f6f5f3">84</text>
+  <text x="1042" y="800" font-size="11" fill="#f6f5f3">22</text>
+  <text x="1120" y="800" font-size="11" fill="#d1003e">2.8x</text>
+
+  <!-- Row 4 (alt bg) -->
+  <rect x="726" y="808" width="446" height="24" rx="0" fill="rgba(246,245,243,0.03)"/>
+  <text x="730" y="826" font-size="11" fill="#fda16b" font-family="monospace">src/components/Dashboard.tsx</text>
+  <text x="974" y="826" font-size="11" fill="#f6f5f3">71</text>
+  <text x="1042" y="826" font-size="11" fill="#f6f5f3">19</text>
+  <text x="1120" y="826" font-size="11" fill="#f6f5f3">1.9x</text>
+
+  <!-- Row 5 -->
+  <text x="730" y="852" font-size="11" fill="#fda16b" font-family="monospace">lib/utils/token-counter.py</text>
+  <text x="974" y="852" font-size="11" fill="#f6f5f3">63</text>
+  <text x="1042" y="852" font-size="11" fill="#f6f5f3">16</text>
+  <text x="1120" y="852" font-size="11" fill="#f6f5f3">1.4x</text>
+
+</svg>
