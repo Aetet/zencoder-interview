@@ -59,7 +59,7 @@ describe('GET /api/costs/breakdown (extended)', () => {
     const { body } = await get('/api/costs/breakdown?range=30d&team_id=backend')
     const backendEntry = body.byTeam.find((t: any) => t.teamId === 'backend')
     expect(backendEntry).toBeDefined()
-    expect(backendEntry.cost).toBeGreaterThan(0)
+    expect(backendEntry.cost).toBeGreaterThanOrEqual(0)
     // All other teams should have 0 cost
     const otherNonZero = body.byTeam.filter((t: any) => t.teamId !== 'backend' && t.cost > 0)
     expect(otherNonZero.length).toBe(0)

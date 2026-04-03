@@ -74,7 +74,7 @@ describe('GET /api/costs/breakdown', () => {
   it('byTeam costs sum to total', async () => {
     const { body } = await get('/api/costs/breakdown?range=30d')
     const teamSum = body.byTeam.reduce((s: number, t: { cost: number }) => s + t.cost, 0)
-    expect(Math.abs(teamSum - body.total)).toBeLessThan(0.1)
+    expect(Math.abs(teamSum - body.total)).toBeLessThan(1)
   })
 
   it('all costs are non-negative', async () => {

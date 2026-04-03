@@ -5,6 +5,7 @@ import { OverviewPage } from './features/overview/OverviewPage'
 import { CostsPage } from './features/costs/CostsPage'
 import { TeamsPage } from './features/teams/TeamsPage'
 import { SettingsPage } from './features/settings/SettingsPage'
+import { FpsCounter } from './shared/components/FpsCounter'
 
 export const App = reatomComponent(() => {
   const path = currentPath()
@@ -22,5 +23,10 @@ export const App = reatomComponent(() => {
     page = <OverviewPage />
   }
 
-  return <DashboardLayout>{page}</DashboardLayout>
+  return (
+    <>
+      <DashboardLayout>{page}</DashboardLayout>
+      <FpsCounter />
+    </>
+  )
 }, 'App')

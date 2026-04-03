@@ -1,5 +1,6 @@
 import { atom, action } from '@reatom/core'
 
+// Simple path-based router atom
 export const currentPath = atom(window.location.pathname, 'router.path')
 
 export const navigate = action((path: string) => {
@@ -7,7 +8,6 @@ export const navigate = action((path: string) => {
   currentPath.set(path)
 }, 'router.navigate')
 
-// Listen for browser back/forward
 window.addEventListener('popstate', () => {
   currentPath.set(window.location.pathname)
 })

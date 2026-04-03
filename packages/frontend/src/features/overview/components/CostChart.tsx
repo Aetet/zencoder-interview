@@ -1,8 +1,12 @@
+import { reatomComponent } from '@reatom/react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { Card } from '../../../shared/components/Card'
-import type { DailyCostTrend } from '@zendash/shared'
+import { costTrend, isLive } from '../model'
 
-export function CostChart({ data, live }: { data: DailyCostTrend[]; live?: boolean }) {
+export const CostChart = reatomComponent(() => {
+  const data = costTrend()
+  const live = isLive()
+
   return (
     <Card>
       <h3 className="text-sm font-medium text-foreground-secondary mb-4">
@@ -16,17 +20,9 @@ export function CostChart({ data, live }: { data: DailyCostTrend[]; live?: boole
           <YAxis tick={{ fontSize: 10, fill: '#9f9e9c' }} tickFormatter={(v) => `$${v}`} />
           <Tooltip contentStyle={{ backgroundColor: '#181715', border: '1px solid rgba(246,245,243,0.09)', borderRadius: 8, fontSize: 12 }} formatter={(v: number) => [`$${v.toFixed(2)}`, 'Cost']} />
           <ReferenceLine y={200} stroke="#d1003e" strokeDasharray="6 4" label={{ value: 'Budget', position: 'right', fontSize: 10, fill: '#d1003e' }} />
-          <Area
-            type="monotone"
-            dataKey="cost"
-            stroke="#c34513"
-            fill="rgba(195,69,19,0.15)"
-            strokeWidth={2}
-            isAnimationActive={!live}
-            animationDuration={live ? 150 : 400}
-          />
+          <Area type="monotone" dataKey="cost" stroke="#c34513" fill="rgba(195,69,19,0.15)" strokeWidth={2} isAnimationActive={!live} animationDuration={live ? 150 : 400} />
         </AreaChart>
       </ResponsiveContainer>
     </Card>
   )
-}
+}, 'CostChart')

@@ -1,8 +1,12 @@
+import { reatomComponent } from '@reatom/react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { Card } from '../../../shared/components/Card'
-import type { DailySessionTrend } from '@zendash/shared'
+import { sessionTrend, isLive } from '../model'
 
-export function SessionsChart({ data, live }: { data: DailySessionTrend[]; live?: boolean }) {
+export const SessionsChart = reatomComponent(() => {
+  const data = sessionTrend()
+  const live = isLive()
+
   return (
     <Card>
       <h3 className="text-sm font-medium text-foreground-secondary mb-4">
@@ -23,4 +27,4 @@ export function SessionsChart({ data, live }: { data: DailySessionTrend[]; live?
       </ResponsiveContainer>
     </Card>
   )
-}
+}, 'SessionsChart')

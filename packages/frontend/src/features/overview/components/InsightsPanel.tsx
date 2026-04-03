@@ -1,14 +1,18 @@
+import { reatomComponent } from '@reatom/react'
 import { Card } from '../../../shared/components/Card'
 import { cn } from '../../../shared/utils/cn'
-import type { Insight } from '@zendash/shared'
+import { insightsList, isLive } from '../model'
 
-const borderColors = {
+const borderColors: Record<string, string> = {
   highCostTeam: 'border-l-primary',
   lowCacheRate: 'border-l-error',
   expensiveSession: 'border-l-warning',
 }
 
-export function InsightsPanel({ insights, live }: { insights: Insight[]; live?: boolean }) {
+export const InsightsPanel = reatomComponent(() => {
+  const insights = insightsList()
+  const live = isLive()
+
   return (
     <Card>
       <h3 className="text-sm font-medium text-foreground-secondary mb-4">
@@ -36,4 +40,4 @@ export function InsightsPanel({ insights, live }: { insights: Insight[]; live?: 
       </div>
     </Card>
   )
-}
+}, 'InsightsPanel')
