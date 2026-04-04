@@ -1,45 +1,19 @@
-/**
- * TeamLeaderboard — React wrapper that mounts a reatom/jsx table.
- */
-import { useRef, useEffect, useState } from 'react'
-import { mount } from '@reatom/jsx'
+import { useState, useEffect } from 'react'
 import { Card } from '../../../shared/components/Card'
 import { formatNumber } from '../../../shared/utils/format'
+import { reatomJsxInReact } from '../../../shared/utils/reatom-jsx-in-react'
 import { teamsAtom, isLive } from '../model'
 import { buildLeaderboard } from './leaderboard-table.reatom'
 
+const LeaderboardTable = reatomJsxInReact(buildLeaderboard, 'LeaderboardTable')
+
 export function TeamLeaderboard() {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const mountedRef = useRef<{ unmount: () => void } | null>(null)
   const [header, setHeader] = useState({ count: 0, live: false })
 
   useEffect(() => {
-    if (!containerRef.current) return
-
-    // Build reatom JSX element and mount it — activates reactive subscriptions
-    const el = buildLeaderboard()
-    const handle = mount(containerRef.current, el as any)
-    mountedRef.current = handle
-
-    return () => {
-      handle.unmount()
-      mountedRef.current = null
-    }
-  }, [])
-
-  // Track header state
-  useEffect(() => {
-    const unsub = teamsAtom.subscribe((teams) => {
-      setHeader(h => ({ ...h, count: teams.length }))
-    })
-    return unsub
-  }, [])
-
-  useEffect(() => {
-    const unsub = isLive.subscribe((live) => {
-      setHeader(h => ({ ...h, live }))
-    })
-    return unsub
+    const u1 = teamsAtom.subscribe((teams) => setHeader(h => ({ ...h, count: teams.length })))
+    const u2 = isLive.subscribe((live) => setHeader(h => ({ ...h, live })))
+    return () => { u1(); u2() }
   }, [])
 
   return (
@@ -51,7 +25,7 @@ export function TeamLeaderboard() {
         </h3>
         <span className="text-[11px] text-foreground-muted">{formatNumber(header.count)} teams</span>
       </div>
-      <div ref={containerRef} />
+      <LeaderboardTable />
     </Card>
   )
 }
