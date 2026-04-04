@@ -86,6 +86,12 @@ body {
   overflow: hidden;
 }
 
+/* Toast slide-in */
+@keyframes slideIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
 /* Smooth number counter transitions */
 .tabular-nums {
   font-variant-numeric: tabular-nums;

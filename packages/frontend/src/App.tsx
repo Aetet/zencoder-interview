@@ -6,6 +6,7 @@ import { CostsPage } from './features/costs/CostsPage'
 import { TeamsPage } from './features/teams/TeamsPage'
 import { SettingsPage } from './features/settings/SettingsPage'
 import { FpsCounter } from './shared/components/FpsCounter'
+import { ToastContainer } from './shared/components/Toast'
 
 export const App = reatomComponent(() => {
   const isOverview = overviewRoute.match()
@@ -27,6 +28,7 @@ export const App = reatomComponent(() => {
   return (
     <>
       <DashboardLayout>{page}</DashboardLayout>
+      <ToastContainer />
       <FpsCounter />
     </>
   )
