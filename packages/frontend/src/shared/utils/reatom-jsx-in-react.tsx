@@ -9,9 +9,9 @@ import { mount } from '@reatom/jsx'
  *   export function buildMyWidget(): HTMLElement { return <div>...</div> }
  *
  *   // in .tsx
- *   export const MyWidget = reatomJsxInReact(buildMyWidget)
+ *   export const MyWidget = r(buildMyWidget)
  */
-export function reatomJsxInReact(
+export function r(
   build: () => HTMLElement,
   displayName?: string,
 ): React.FC {

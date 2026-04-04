@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Card } from '../../../shared/components/Card'
 import { formatNumber } from '../../../shared/utils/format'
-import { reatomJsxInReact } from '../../../shared/utils/reatom-jsx-in-react'
+import { r } from '../../../shared/utils/reatom-jsx-in-react'
 import { teamsAtom, isLive } from '../model'
-import { buildLeaderboard } from './leaderboard-table.reatom'
+import { TeamLeaderboardJsx } from './leaderboard-table.reatom'
 
-const LeaderboardTable = reatomJsxInReact(buildLeaderboard, 'LeaderboardTable')
+const LeaderboardTable = r(TeamLeaderboardJsx, 'LeaderboardTable')
 
 export function TeamLeaderboard() {
   const [header, setHeader] = useState({ count: 0, live: false })
