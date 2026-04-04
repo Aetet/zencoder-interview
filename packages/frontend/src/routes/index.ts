@@ -1,17 +1,13 @@
-import { reatomRoute, urlAtom, effect } from '@reatom/core'
+import { urlAtom } from '@reatom/core'
 
-// Route definitions
-export const overviewRoute = reatomRoute('overview')
-export const costsRoute = reatomRoute('costs')
-export const teamsRoute = reatomRoute('teams')
-export const settingsRoute = reatomRoute('settings')
+export { overviewRoute } from '../features/overview/overview-model'
+export { costsRoute } from '../features/costs/costs-model'
+export { teamsRoute } from '../features/teams/teams-model'
+export { settingsRoute } from '../features/settings/settings-model'
 
-// Redirect / to /overview
-effect(() => {
-  const { pathname } = urlAtom()
-  if (pathname === '/' || pathname === '') {
-    overviewRoute.go({})
-  }
-}, 'router.redirectRoot')
+// Redirect / to /overview on initial load
+if (window.location.pathname === '/' || window.location.pathname === '') {
+  history.replaceState(null, '', '/overview')
+}
 
 export { urlAtom }

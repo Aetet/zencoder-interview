@@ -1,7 +1,5 @@
 import { reatomComponent } from '@reatom/react'
-import { useEffect } from 'react'
-import { costBreakdown, cacheData, budgetData, topFiles, costsLoading, fetchCosts } from './model'
-import { filterParams } from '../../shared/filters/model'
+import { costsRoute } from './costs-model'
 import { KpiCard } from '../../shared/components/KpiCard'
 import { Skeleton } from '../../shared/components/Skeleton'
 import { formatCurrency, formatCompact } from '../../shared/utils/format'
@@ -11,15 +9,13 @@ import { BudgetTracker } from './components/BudgetTracker'
 import { TopFilesTable } from './components/TopFilesTable'
 
 export const CostsPage = reatomComponent(() => {
-  const params = filterParams()
-  const loading = costsLoading()
-  const breakdown = costBreakdown()
+  const ready = costsRoute.loader.ready()
+  const breakdown = costsRoute.breakdown()
+  const cache = costsRoute.cache()
+  const budget = costsRoute.budget()
+  const files = costsRoute.files()
 
-  useEffect(() => {
-    fetchCosts()
-  }, [JSON.stringify(params)])
-
-  if (loading && !breakdown) {
+  if (!ready) {
     return (
       <div className="space-y-5">
         <div className="grid grid-cols-4 gap-4">
@@ -31,10 +27,6 @@ export const CostsPage = reatomComponent(() => {
   }
 
   if (!breakdown) return null
-
-  const cache = cacheData()
-  const budget = budgetData()
-  const files = topFiles()
 
   return (
     <div className="space-y-5">
@@ -58,7 +50,6 @@ export const CostsPage = reatomComponent(() => {
       </div>
 
       {budget && <BudgetTracker data={budget} />}
-
       {files && <TopFilesTable data={files} />}
     </div>
   )

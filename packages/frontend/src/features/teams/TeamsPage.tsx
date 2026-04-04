@@ -1,7 +1,5 @@
 import { reatomComponent } from '@reatom/react'
-import { useEffect } from 'react'
-import { teamsList, selectedTeamId, teamUsers, teamsLoading, fetchTeams, selectTeam } from './model'
-import { filterParams } from '../../shared/filters/model'
+import { teamsRoute } from './teams-model'
 import { KpiCard } from '../../shared/components/KpiCard'
 import { Card } from '../../shared/components/Card'
 import { DataTable } from '../../shared/components/DataTable'
@@ -12,17 +10,12 @@ import type { Team, TeamUser } from '@zendash/shared'
 import { ModelUsageChart } from './components/ModelUsageChart'
 
 export const TeamsPage = reatomComponent(() => {
-  const params = filterParams()
-  const loading = teamsLoading()
-  const teams = teamsList()
-  const selectedId = selectedTeamId()
-  const users = teamUsers()
+  const ready = teamsRoute.loader.ready()
+  const teams = teamsRoute.teamsList()
+  const selectedId = teamsRoute.selectedTeamId()
+  const users = teamsRoute.teamUsers()
 
-  useEffect(() => {
-    fetchTeams()
-  }, [JSON.stringify(params)])
-
-  if (loading && teams.length === 0) {
+  if (!ready && teams.length === 0) {
     return <Skeleton className="h-96" />
   }
 
@@ -34,9 +27,9 @@ export const TeamsPage = reatomComponent(() => {
 
       <div className="flex gap-2 flex-wrap">
         <button
-          onClick={() => selectTeam(null)}
+          onClick={() => teamsRoute.selectTeam(null)}
           className={cn(
-            'px-3 py-1.5 rounded-xl text-[13px] transition-colors',
+            'px-3 py-1.5 rounded-xl text-[13px] transition-colors cursor-pointer',
             !selectedId ? 'bg-accent text-foreground font-medium' : 'text-foreground-muted hover:text-foreground',
           )}
         >
@@ -45,9 +38,9 @@ export const TeamsPage = reatomComponent(() => {
         {teams.map((t) => (
           <button
             key={t.id}
-            onClick={() => selectTeam(t.id)}
+            onClick={() => teamsRoute.selectTeam(t.id)}
             className={cn(
-              'px-3 py-1.5 rounded-xl text-[13px] transition-colors',
+              'px-3 py-1.5 rounded-xl text-[13px] transition-colors cursor-pointer',
               selectedId === t.id ? 'bg-accent text-foreground font-medium' : 'text-foreground-muted hover:text-foreground',
             )}
           >
@@ -68,7 +61,7 @@ export const TeamsPage = reatomComponent(() => {
               { key: 'cache', header: 'Cache Hit', render: (t: Team) => <span className={t.cacheHitRate < 0.3 ? 'text-error' : t.cacheHitRate < 0.5 ? 'text-warning' : ''}>{formatPercent(t.cacheHitRate)}</span> },
             ]}
             data={teams}
-            onRowClick={(t) => selectTeam(t.id)}
+            onRowClick={(t) => teamsRoute.selectTeam(t.id)}
           />
         </Card>
       ) : selectedTeam ? (

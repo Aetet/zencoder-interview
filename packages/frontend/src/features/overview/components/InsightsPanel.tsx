@@ -1,7 +1,7 @@
 import { reatomComponent } from '@reatom/react'
 import { Card } from '../../../shared/components/Card'
 import { cn } from '../../../shared/utils/cn'
-import { insightsList, isLive } from '../model'
+import { overviewRoute } from '../overview-model'
 
 const borderColors: Record<string, string> = {
   highCostTeam: 'border-l-primary',
@@ -10,8 +10,8 @@ const borderColors: Record<string, string> = {
 }
 
 export const InsightsPanel = reatomComponent(() => {
-  const insights = insightsList()
-  const live = isLive()
+  const insights = overviewRoute.insightsList()
+  const live = overviewRoute.isLive()
 
   return (
     <Card>

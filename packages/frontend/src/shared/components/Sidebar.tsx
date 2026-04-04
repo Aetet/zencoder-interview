@@ -26,7 +26,7 @@ export const Sidebar = reatomComponent(() => {
               key={item.label}
               onClick={() => item.route.go({})}
               className={cn(
-                'flex items-center h-10 px-10 text-sm text-left transition-colors',
+                'flex items-center h-10 px-10 text-sm text-left transition-colors cursor-pointer',
                 isActive
                   ? 'bg-accent text-accent-foreground border-l-[3px] border-primary'
                   : 'text-foreground-muted hover:text-foreground hover:bg-accent/50 border-l-[3px] border-transparent',

@@ -329,7 +329,96 @@ EventSource.onmessage
 
 ---
 
-## 10. Anti-Patterns Discovered
+## 10. Routing with `reatomRoute`
+
+### Route Definitions
+
+Use `reatomRoute(path)` for each page. Routes are atoms — they return params when matched, `null` when not.
+
+```ts
+import { reatomRoute, urlAtom, effect } from '@reatom/core'
+
+export const overviewRoute = reatomRoute('overview')
+export const costsRoute = reatomRoute('costs')
+export const teamsRoute = reatomRoute('teams')
+export const settingsRoute = reatomRoute('settings')
+
+// Redirect / to /overview
+effect(() => {
+  const { pathname } = urlAtom()
+  if (pathname === '/' || pathname === '') {
+    overviewRoute.go({})
+  }
+}, 'router.redirectRoot')
+```
+
+### Navigation
+
+```ts
+// Navigate programmatically
+overviewRoute.go({})
+costsRoute.go({})
+
+// With params (for routes with :param segments)
+userRoute.go({ userId: '123' })
+
+// Build URL without navigating
+const url = userRoute.path({ userId: '123' })
+```
+
+**Note:** `urlAtom` intercepts `<a>` link clicks for SPA navigation by default.
+
+### Route Matching in Components
+
+```tsx
+// .match() — true when URL starts with the route path (prefix match)
+costsRoute.match()  // true for /costs, /costs/details, etc.
+
+// .exact() — true only when URL matches exactly
+costsRoute.exact()  // true for /costs only, not /costs/details
+
+// Route params — returns object when matched, null when not
+const params = userRoute()  // { userId: '123' } | null
+```
+
+### Sidebar Active State
+
+```tsx
+const NAV_ITEMS = [
+  { label: 'Overview', route: overviewRoute },
+  { label: 'Costs', route: costsRoute },
+]
+
+// Use .match() for active highlighting
+const isActive = item.route.match()
+```
+
+### Avoid Empty Path Routes
+
+```ts
+// WRONG — '' matches everything (every URL starts with empty string)
+const overviewRoute = reatomRoute('')
+
+// RIGHT — use a real path segment
+const overviewRoute = reatomRoute('overview')
+// Then redirect '/' to '/overview' via effect
+```
+
+### Conditional Rendering by Route
+
+```tsx
+const App = reatomComponent(() => {
+  // Check routes in specific-to-general order
+  if (costsRoute.match()) return <CostsPage />
+  if (teamsRoute.match()) return <TeamsPage />
+  if (settingsRoute.match()) return <SettingsPage />
+  return <OverviewPage />  // fallback
+}, 'App')
+```
+
+---
+
+## 11. Anti-Patterns Discovered
 
 ### Don't write to `withAsyncData`'s `.data` atom during live mode
 

@@ -1,6 +1,5 @@
 import { reatomComponent } from '@reatom/react'
-import { useEffect } from 'react'
-import { budgetState, budgetInput, thresholds, saving, settingsLoading, fetchSettings, saveBudget } from './model'
+import { settingsRoute } from './settings-model'
 import { Card } from '../../shared/components/Card'
 import { ProgressBar } from '../../shared/components/ProgressBar'
 import { Skeleton } from '../../shared/components/Skeleton'
@@ -10,15 +9,11 @@ import { cn } from '../../shared/utils/cn'
 const THRESHOLD_LEVELS = [50, 75, 90, 100]
 
 export const SettingsPage = reatomComponent(() => {
-  const loading = settingsLoading()
-  const budget = budgetState()
-  const isSaving = saving()
+  const ready = settingsRoute.loader.ready()
+  const budget = settingsRoute.budget()
+  const isSaving = settingsRoute.saving()
 
-  useEffect(() => {
-    fetchSettings()
-  }, [])
-
-  if (loading && !budget) return <Skeleton className="h-96" />
+  if (!ready) return <Skeleton className="h-96" />
 
   return (
     <div className="space-y-5">
@@ -31,8 +26,8 @@ export const SettingsPage = reatomComponent(() => {
           <label className="block text-xs text-foreground-muted mb-1">Monthly Budget (USD)</label>
           <input
             type="number"
-            value={budgetInput()}
-            onChange={(e) => budgetInput.set(e.target.value)}
+            value={settingsRoute.budgetInput()}
+            onChange={(e) => settingsRoute.budgetInput.set(e.target.value)}
             className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground text-sm outline-none focus:ring-1 focus:ring-ring"
           />
           {budget && (
@@ -44,15 +39,15 @@ export const SettingsPage = reatomComponent(() => {
           <h4 className="text-sm font-medium text-foreground-secondary mt-6 mb-3">Alert Thresholds</h4>
           <div className="space-y-2">
             {THRESHOLD_LEVELS.map((level) => {
-              const active = thresholds()[level] ?? false
+              const active = settingsRoute.thresholds()[level] ?? false
               return (
                 <label key={level} className="flex items-center justify-between py-1.5 cursor-pointer">
                   <span className="text-sm text-foreground">
-                    {level}% — Notify at {formatCurrency(Number(budgetInput()) * level / 100)}
+                    {level}% — Notify at {formatCurrency(Number(settingsRoute.budgetInput()) * level / 100)}
                   </span>
                   <button
                     type="button"
-                    onClick={() => thresholds.set((s) => ({ ...s, [level]: !s[level] }))}
+                    onClick={() => settingsRoute.thresholds.set((s) => ({ ...s, [level]: !s[level] }))}
                     className={cn(
                       'w-9 h-5 rounded-full transition-colors relative',
                       active ? 'bg-primary' : 'bg-accent',
@@ -96,9 +91,9 @@ export const SettingsPage = reatomComponent(() => {
           )}
 
           <button
-            onClick={() => saveBudget()}
+            onClick={() => settingsRoute.saveBudget()}
             disabled={isSaving}
-            className="w-full mt-6 bg-primary text-primary-foreground py-2.5 rounded-xl text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+            className="w-full mt-6 bg-primary text-primary-foreground py-2.5 rounded-xl text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer"
           >
             {isSaving ? 'Saving...' : 'Save Changes'}
           </button>

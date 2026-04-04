@@ -1,11 +1,11 @@
 import { reatomComponent } from '@reatom/react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { Card } from '../../../shared/components/Card'
-import { costTrend, isLive } from '../model'
+import { overviewRoute } from '../overview-model'
 
 export const CostChart = reatomComponent(() => {
-  const data = costTrend()
-  const live = isLive()
+  const data = overviewRoute.costTrend()
+  const live = overviewRoute.isLive()
 
   return (
     <Card>

@@ -1,11 +1,11 @@
 import { reatomComponent } from '@reatom/react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { Card } from '../../../shared/components/Card'
-import { sessionTrend, isLive } from '../model'
+import { overviewRoute } from '../overview-model'
 
 export const SessionsChart = reatomComponent(() => {
-  const data = sessionTrend()
-  const live = isLive()
+  const data = overviewRoute.sessionTrend()
+  const live = overviewRoute.isLive()
 
   return (
     <Card>
