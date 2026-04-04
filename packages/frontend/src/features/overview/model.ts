@@ -86,40 +86,29 @@ export const insightsList = computed(() => {
 export const qualityData = computed(() => overviewResource.data()?.quality ?? null, "overview.quality")
 
 // ---------------------------------------------------------------------------
-// 4. Teams — two-array approach
+// 4. Teams — plain JS, no atoms
 //
-//    Array 1 (freshestTeams): plain JS variable, always latest SSE data. Zero cost.
-//    Array 2 (renderTeams):   reatom atom, used for rendering. Updated every TEAM_FLUSH_MS.
-//                             No sorting — server sends in the order it wants.
+//    freshestTeams: always latest SSE data. Zero cost.
+//    Component registers a callback via onTeamsUpdate(). Model calls it on flush.
 // ---------------------------------------------------------------------------
 
-// Array 1 — always fresh, never triggers renders
 let freshestTeams: Team[] = []
+let teamsListener: ((teams: Team[]) => void) | null = null
 
-// Array 2 — for rendering (initial load + non-live)
-export const renderTeams = atom<Team[]>([], "overview.renderTeams")
-
-// Direct DOM patch callback — registered by TeamLeaderboard component
-let livePatchFn: ((teams: Team[]) => void) | null = null
-export function registerLivePatch(fn: ((teams: Team[]) => void) | null) {
-  livePatchFn = fn
-}
-
-// Read-only access to freshest teams (for initial DOM build)
-export function getFreshestTeams(): Team[] {
-  return freshestTeams
+export function onTeamsUpdate(fn: ((teams: Team[]) => void) | null) {
+  teamsListener = fn
+  // Immediately push current data if available
+  if (fn && freshestTeams.length > 0) fn(freshestTeams)
 }
 
 // Sync from resource on initial load
 effect(() => {
   overviewResource()
   const data = overviewResource.data()
-  console.log("[teams] effect fired, data:", !!data, "teams:", data?.teams?.length ?? 0)
   const raw = data?.teams
   if (!raw || raw.length === 0) return
   freshestTeams = raw
-  renderTeams.set(raw)
-  console.log("[teams] renderTeams set with", raw.length, "teams")
+  teamsListener?.(raw)
 }, "overview.syncTeamsEffect")
 
 // ---------------------------------------------------------------------------
@@ -166,13 +155,7 @@ function applyLiveUpdate() {
 
 function flushTeamsToRender() {
   if (freshestTeams.length === 0) return
-  if (livePatchFn) {
-    // Fast path: direct DOM patch, skip React
-    livePatchFn(freshestTeams)
-  } else {
-    // Fallback: set atom, let React handle it
-    renderTeams.set(freshestTeams)
-  }
+  teamsListener?.(freshestTeams)
 }
 
 export const startLive = action(() => {
