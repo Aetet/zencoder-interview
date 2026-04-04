@@ -1,5 +1,5 @@
 import { reatomComponent } from '@reatom/react'
-import { currentPath } from './routes'
+import { overviewRoute, costsRoute, teamsRoute, settingsRoute } from './routes'
 import { DashboardLayout } from './shared/components/DashboardLayout'
 import { OverviewPage } from './features/overview/OverviewPage'
 import { CostsPage } from './features/costs/CostsPage'
@@ -8,16 +8,17 @@ import { SettingsPage } from './features/settings/SettingsPage'
 import { FpsCounter } from './shared/components/FpsCounter'
 
 export const App = reatomComponent(() => {
-  const path = currentPath()
+  const isOverview = overviewRoute.match()
+  const isCosts = costsRoute.match()
+  const isTeams = teamsRoute.match()
+  const isSettings = settingsRoute.match()
 
   let page: React.ReactNode
-  if (path === '/' || path === '') {
-    page = <OverviewPage />
-  } else if (path.startsWith('/costs')) {
+  if (isCosts) {
     page = <CostsPage />
-  } else if (path.startsWith('/teams')) {
+  } else if (isTeams) {
     page = <TeamsPage />
-  } else if (path.startsWith('/settings')) {
+  } else if (isSettings) {
     page = <SettingsPage />
   } else {
     page = <OverviewPage />

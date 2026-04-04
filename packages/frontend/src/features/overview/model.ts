@@ -117,7 +117,7 @@ let eventSource: EventSource | null = null
 let pendingLiveData: FullLivePayload | null = null
 let rafId: number | null = null
 let teamFlushTimer: ReturnType<typeof setInterval> | null = null
-const TEAM_FLUSH_MS = 700
+const TEAM_FLUSH_MS = 300
 
 interface FullLivePayload extends LiveUpdate {
   teams?: Team[]

@@ -1,13 +1,17 @@
-import { atom, action } from '@reatom/core'
+import { reatomRoute, urlAtom, effect } from '@reatom/core'
 
-// Simple path-based router atom
-export const currentPath = atom(window.location.pathname, 'router.path')
+// Route definitions
+export const overviewRoute = reatomRoute('overview')
+export const costsRoute = reatomRoute('costs')
+export const teamsRoute = reatomRoute('teams')
+export const settingsRoute = reatomRoute('settings')
 
-export const navigate = action((path: string) => {
-  window.history.pushState({}, '', path)
-  currentPath.set(path)
-}, 'router.navigate')
+// Redirect / to /overview
+effect(() => {
+  const { pathname } = urlAtom()
+  if (pathname === '/' || pathname === '') {
+    overviewRoute.go({})
+  }
+}, 'router.redirectRoot')
 
-window.addEventListener('popstate', () => {
-  currentPath.set(window.location.pathname)
-})
+export { urlAtom }

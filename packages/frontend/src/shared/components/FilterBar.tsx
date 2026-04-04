@@ -1,14 +1,13 @@
 import { reatomComponent } from '@reatom/react'
 import { timeRange, teamFilter, modelFilter } from '../filters/model'
-import { currentPath } from '../../routes'
+import { overviewRoute } from '../../routes'
 import { cn } from '../utils/cn'
 
 const TIME_RANGES = ['today', '7d', '30d', '90d']
 
 export const FilterBar = reatomComponent(() => {
   const active = timeRange()
-  const path = currentPath()
-  const isOverview = path === '/'
+  const isOverview = overviewRoute.exact()
 
   return (
     <div className="h-14 bg-card border-b border-border flex items-center px-4 gap-3 shrink-0">
