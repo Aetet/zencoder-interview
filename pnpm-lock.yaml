@@ -45,6 +45,9 @@ importers:
       '@reatom/core':
         specifier: 1000.15.2
         version: 1000.15.2
+      '@reatom/jsx':
+        specifier: ^1000.1.0
+        version: 1000.1.0(@reatom/core@1000.15.2)
       '@reatom/react':
         specifier: 1000.2.2
         version: 1000.2.2(@reatom/core@1000.15.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -638,6 +641,11 @@ packages:
 
   '@reatom/core@1000.15.2':
     resolution: {integrity: sha512-ychH11wZaVHHYsfPuPQvgGr8YyonURggwQwiaTxy+164nRfDnXXgbvuaWePjim7K3FR3LfI6ydYNoqJnDh88Bg==}
+
+  '@reatom/jsx@1000.1.0':
+    resolution: {integrity: sha512-WgQoJJQyw30GltqicaJUH33Xr0bfpSl3DGU7EQdBDiHEh6GiXqlhTq7ea0g4vAWRDogm9/akGTKHGs6CebKJbQ==}
+    peerDependencies:
+      '@reatom/core': ^1000.1.0
 
   '@reatom/react@1000.2.2':
     resolution: {integrity: sha512-QxNFwtmbsIK/DUtmjebfW9gmW+d+4UPZVq1f+Nb2wkiNOZ8yUh7o0i4xAs83nneZOFqcqwNiYKfDrEpBozMCvA==}
@@ -1924,6 +1932,11 @@ snapshots:
       '@standard-schema/spec': 1.1.0
     optionalDependencies:
       idb-keyval: 6.2.2
+
+  '@reatom/jsx@1000.1.0(@reatom/core@1000.15.2)':
+    dependencies:
+      '@reatom/core': 1000.15.2
+      csstype: 3.2.3
 
   '@reatom/react@1000.2.2(@reatom/core@1000.15.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
