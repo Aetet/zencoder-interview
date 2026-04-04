@@ -21,6 +21,8 @@ export const OverviewPage = reatomFactoryComponent(() => {
 
   // Render function — runs on every atom change
   return () => {
+    // Subscribe to the async computed to trigger the fetch
+    overviewResource()
     const ready = overviewResource.ready()
     const data = overviewResource.data()
     const live = isLive()

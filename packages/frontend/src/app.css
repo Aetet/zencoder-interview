@@ -70,3 +70,16 @@ body {
   font-variant-numeric: tabular-nums;
   transition: all 0.2s ease-out;
 }
+
+/* Row containment for scroll perf */
+.virtual-row {
+  contain-intrinsic-height: 37px;
+}
+
+/* Scroll container optimization */
+.virtual-scroll {
+  height: 480px;
+  contain: strict;
+  will-change: scroll-position;
+  overflow-anchor: none;
+}

@@ -83,7 +83,7 @@ live.get('/live', (c) => {
 
     // Stream at ~15 updates/second (67ms interval)
     while (true) {
-      const v = () => 1 + (Math.random() - 0.5) * 0.06
+      const v = () => 1 + (Math.random() - 0.5) * 0.20
 
       const trend: DailySessionTrend[] = baseTrend.map((d) => ({
         ...d,

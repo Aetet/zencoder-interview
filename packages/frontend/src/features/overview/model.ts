@@ -1,10 +1,7 @@
-import { atom, computed, action, effect, reatomBoolean, withAsyncData, wrap, type Atom } from '@reatom/core'
-import { api } from '../../shared/api/client'
-import { filterParams } from '../../shared/filters/model'
-import type {
-  Insight, QualityTier1, Team,
-  LiveUpdate, DailySessionTrend, DailyCostTrend,
-} from '@zendash/shared'
+import { atom, computed, action, effect, reatomBoolean, withAsyncData, wrap } from "@reatom/core"
+import { api } from "../../shared/api/client"
+import { filterParams } from "../../shared/filters/model"
+import type { Insight, QualityTier1, Team, LiveUpdate, DailySessionTrend, DailyCostTrend } from "@zendash/shared"
 
 // ---------------------------------------------------------------------------
 // 1. Data resource — fetches on filter change, only while subscribed
@@ -19,13 +16,13 @@ export const overviewResource = computed(async () => {
     wrap(api.quality.tier1(params)),
   ])
   return { summary, insights, teams, quality }
-}, 'overview.resource').extend(withAsyncData({ initState: null }))
+}, "overview.resource").extend(withAsyncData({ initState: null }))
 
 // ---------------------------------------------------------------------------
 // 2. Live override atoms — SSE writes here, never into overviewResource
 // ---------------------------------------------------------------------------
 
-export const isLive = reatomBoolean(false, 'overview.isLive')
+export const isLive = reatomBoolean(false, "overview.isLive")
 
 const liveKpis = atom<{
   totalSessions: number
@@ -33,147 +30,109 @@ const liveKpis = atom<{
   completionRate: number
   activeUsers: number
   costPerSession: number
-} | null>(null, 'overview.liveKpis')
+} | null>(null, "overview.liveKpis")
 
-const liveTrend = atom<DailySessionTrend[] | null>(null, 'overview.liveTrend')
-const liveCostTrend = atom<DailyCostTrend[] | null>(null, 'overview.liveCostTrend')
-const liveInsights = atom<Insight[] | null>(null, 'overview.liveInsights')
+const liveTrend = atom<DailySessionTrend[] | null>(null, "overview.liveTrend")
+const liveCostTrend = atom<DailyCostTrend[] | null>(null, "overview.liveCostTrend")
+const liveInsights = atom<Insight[] | null>(null, "overview.liveInsights")
 
 // ---------------------------------------------------------------------------
 // 3. Public computed atoms — pick live data if live, else resource data
 // ---------------------------------------------------------------------------
 
-const summaryData = computed(
-  () => overviewResource.data()?.summary ?? null,
-  'overview.summaryData',
-)
+const summaryData = computed(() => overviewResource.data()?.summary ?? null, "overview.summaryData")
 
 export const totalSessions = computed(() => {
   const lk = liveKpis()
-  return lk ? lk.totalSessions : (summaryData()?.totalSessions ?? 0)
-}, 'overview.totalSessions')
+  return lk ? lk.totalSessions : summaryData()?.totalSessions ?? 0
+}, "overview.totalSessions")
 
 export const totalCost = computed(() => {
   const lk = liveKpis()
-  return lk ? lk.totalCost : (summaryData()?.totalCost ?? 0)
-}, 'overview.totalCost')
+  return lk ? lk.totalCost : summaryData()?.totalCost ?? 0
+}, "overview.totalCost")
 
 export const completionRate = computed(() => {
   const lk = liveKpis()
-  return lk ? lk.completionRate : (summaryData()?.completionRate ?? 0)
-}, 'overview.completionRate')
+  return lk ? lk.completionRate : summaryData()?.completionRate ?? 0
+}, "overview.completionRate")
 
 export const activeUsers = computed(() => {
   const lk = liveKpis()
-  return lk ? lk.activeUsers : (summaryData()?.activeUsers ?? 0)
-}, 'overview.activeUsers')
+  return lk ? lk.activeUsers : summaryData()?.activeUsers ?? 0
+}, "overview.activeUsers")
 
-export const totalUsers = computed(
-  () => summaryData()?.totalUsers ?? 0,
-  'overview.totalUsers',
-)
+export const totalUsers = computed(() => summaryData()?.totalUsers ?? 0, "overview.totalUsers")
 
-export const adoptionRate = computed(
-  () => summaryData()?.adoptionRate ?? 0,
-  'overview.adoptionRate',
-)
+export const adoptionRate = computed(() => summaryData()?.adoptionRate ?? 0, "overview.adoptionRate")
 
 export const costPerSession = computed(() => {
   const lk = liveKpis()
-  return lk ? lk.costPerSession : (summaryData()?.costPerSession ?? 0)
-}, 'overview.costPerSession')
+  return lk ? lk.costPerSession : summaryData()?.costPerSession ?? 0
+}, "overview.costPerSession")
 
 export const sessionTrend = computed(() => {
   return liveTrend() ?? summaryData()?.trend ?? []
-}, 'overview.sessionTrend')
+}, "overview.sessionTrend")
 
 export const costTrend = computed(() => {
   return liveCostTrend() ?? summaryData()?.costTrend ?? []
-}, 'overview.costTrend')
+}, "overview.costTrend")
 
 export const insightsList = computed(() => {
   return liveInsights() ?? overviewResource.data()?.insights ?? []
-}, 'overview.insights')
+}, "overview.insights")
 
-export const qualityData = computed(
-  () => overviewResource.data()?.quality ?? null,
-  'overview.quality',
-)
+export const qualityData = computed(() => overviewResource.data()?.quality ?? null, "overview.quality")
 
 // ---------------------------------------------------------------------------
-// 4. Atomized teams
+// 4. Teams — two-array approach
+//
+//    Array 1 (freshestTeams): plain JS variable, always latest SSE data. Zero cost.
+//    Array 2 (renderTeams):   reatom atom, used for rendering. Updated every TEAM_FLUSH_MS.
+//                             No sorting — server sends in the order it wants.
 // ---------------------------------------------------------------------------
 
-export interface TeamModel {
-  id: string
-  name: Atom<string>
-  sessions: Atom<number>
-  cost: Atom<number>
-  completionRate: Atom<number>
-  costPerSession: Atom<number>
-  cacheHitRate: Atom<number>
+// Array 1 — always fresh, never triggers renders
+let freshestTeams: Team[] = []
+
+// Array 2 — for rendering (initial load + non-live)
+export const renderTeams = atom<Team[]>([], "overview.renderTeams")
+
+// Direct DOM patch callback — registered by TeamLeaderboard component
+let livePatchFn: ((teams: Team[]) => void) | null = null
+export function registerLivePatch(fn: ((teams: Team[]) => void) | null) {
+  livePatchFn = fn
 }
 
-const teamModelsCache = new Map<string, TeamModel>()
-
-function getOrCreateTeamModel(t: Team): TeamModel {
-  const existing = teamModelsCache.get(t.id)
-  if (existing) return existing
-
-  const model: TeamModel = {
-    id: t.id,
-    name: atom(t.name, `overview.team#${t.id}.name`),
-    sessions: atom(t.sessions, `overview.team#${t.id}.sessions`),
-    cost: atom(t.cost, `overview.team#${t.id}.cost`),
-    completionRate: atom(t.completionRate, `overview.team#${t.id}.completionRate`),
-    costPerSession: atom(t.costPerSession, `overview.team#${t.id}.costPerSession`),
-    cacheHitRate: atom(t.cacheHitRate, `overview.team#${t.id}.cacheHitRate`),
-  }
-  teamModelsCache.set(t.id, model)
-  return model
+// Read-only access to freshest teams (for initial DOM build)
+export function getFreshestTeams(): Team[] {
+  return freshestTeams
 }
 
-function updateTeamModel(model: TeamModel, t: Team) {
-  model.sessions.set(t.sessions)
-  model.cost.set(t.cost)
-  model.completionRate.set(t.completionRate)
-  model.costPerSession.set(t.costPerSession)
-  model.cacheHitRate.set(t.cacheHitRate)
-}
-
-export const teamModelsList = atom<TeamModel[]>([], 'overview.teamModels')
-
-// Sync teams from resource when it loads
+// Sync from resource on initial load
 effect(() => {
-  const raw = overviewResource.data()?.teams
-  if (!raw) return
-  const current = teamModelsList()
-  let listChanged = current.length !== raw.length
-
-  for (const t of raw) {
-    const model = getOrCreateTeamModel(t)
-    updateTeamModel(model, t)
-    if (!listChanged && !current.some(m => m.id === t.id)) listChanged = true
-  }
-
-  if (listChanged) {
-    teamModelsList.set(raw.map(t => getOrCreateTeamModel(t)))
-  }
-}, 'overview.syncTeamsEffect')
-
-export const sortedTeamModels = computed(() => {
-  const models = teamModelsList()
-  return [...models].sort((a, b) => b.cost() - a.cost())
-}, 'overview.sortedTeamModels')
+  overviewResource()
+  const data = overviewResource.data()
+  console.log("[teams] effect fired, data:", !!data, "teams:", data?.teams?.length ?? 0)
+  const raw = data?.teams
+  if (!raw || raw.length === 0) return
+  freshestTeams = raw
+  renderTeams.set(raw)
+  console.log("[teams] renderTeams set with", raw.length, "teams")
+}, "overview.syncTeamsEffect")
 
 // ---------------------------------------------------------------------------
-// 5. Live mode — SSE with rAF throttle
-//    Writes to live* atoms and team atoms in-place. Never touches overviewResource.
+// 5. Live mode — SSE
+//    KPIs: update every rAF frame via live override atoms
+//    Teams: SSE writes to freshestTeams (free). Timer flushes to sortedTeams every 300ms.
 // ---------------------------------------------------------------------------
 
 let eventSource: EventSource | null = null
 let pendingLiveData: FullLivePayload | null = null
 let rafId: number | null = null
+let teamFlushTimer: ReturnType<typeof setInterval> | null = null
+const TEAM_FLUSH_MS = 100
 
 interface FullLivePayload extends LiveUpdate {
   teams?: Team[]
@@ -186,7 +145,7 @@ function applyLiveUpdate() {
   pendingLiveData = null
   rafId = null
 
-  // Write to live override atoms — these are separate from overviewResource
+  // KPIs — every frame
   liveKpis.set({
     totalSessions: data.totalSessions,
     totalCost: data.totalCost,
@@ -199,12 +158,20 @@ function applyLiveUpdate() {
   if (data.costTrend.length > 0) liveCostTrend.set(data.costTrend)
   if (data.insights && data.insights.length > 0) liveInsights.set(data.insights)
 
-  // Update team atoms in-place
+  // Teams — just store in plain JS, zero cost
   if (data.teams) {
-    for (const t of data.teams) {
-      const model = teamModelsCache.get(t.id)
-      if (model) updateTeamModel(model, t)
-    }
+    freshestTeams = data.teams
+  }
+}
+
+function flushTeamsToRender() {
+  if (freshestTeams.length === 0) return
+  if (livePatchFn) {
+    // Fast path: direct DOM patch, skip React
+    livePatchFn(freshestTeams)
+  } else {
+    // Fallback: set atom, let React handle it
+    renderTeams.set(freshestTeams)
   }
 }
 
@@ -213,13 +180,15 @@ export const startLive = action(() => {
   const params = new URLSearchParams(filterParams())
   eventSource = new EventSource(`/api/overview/live?${params}`)
 
-  eventSource.addEventListener('update', (event) => {
+  eventSource.addEventListener("update", event => {
     try {
       pendingLiveData = JSON.parse(event.data)
       if (rafId === null) {
         rafId = requestAnimationFrame(applyLiveUpdate)
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   })
 
   eventSource.onerror = () => {
@@ -227,22 +196,34 @@ export const startLive = action(() => {
     isLive.setFalse()
   }
 
+  // Start team flush interval
+  teamFlushTimer = setInterval(flushTeamsToRender, TEAM_FLUSH_MS)
+
   isLive.setTrue()
-}, 'overview.startLive')
+}, "overview.startLive")
 
 export const stopLive = action(() => {
-  if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null }
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId)
+    rafId = null
+  }
+  if (teamFlushTimer) {
+    clearInterval(teamFlushTimer)
+    teamFlushTimer = null
+  }
   pendingLiveData = null
-  if (eventSource) { eventSource.close(); eventSource = null }
+  if (eventSource) {
+    eventSource.close()
+    eventSource = null
+  }
   isLive.setFalse()
-  // Clear live overrides so computed atoms fall back to resource data
   liveKpis.set(null)
   liveTrend.set(null)
   liveCostTrend.set(null)
   liveInsights.set(null)
-}, 'overview.stopLive')
+}, "overview.stopLive")
 
 export const toggleLive = action(() => {
   if (isLive()) stopLive()
   else startLive()
-}, 'overview.toggleLive')
+}, "overview.toggleLive")

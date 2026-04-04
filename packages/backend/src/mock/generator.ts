@@ -167,6 +167,6 @@ function generateSessions(teams: MockTeam[], users: MockUser[], days: number, pe
 export function generateMockData() {
   const teams = TEAM_DEFS
   const users = generateUsers(teams)
-  const sessions = generateSessions(teams, users, 30, 100)
+  const sessions = generateSessions(teams, users, 30, 3000)
   return { teams, users, sessions }
 }
