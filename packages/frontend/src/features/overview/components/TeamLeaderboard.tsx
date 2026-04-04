@@ -1,61 +1,45 @@
 /**
  * TeamLeaderboard — React wrapper that mounts a reatom/jsx table.
- * The table is built in leaderboard-table.tsx using reatom JSX.
- * This file is pure React JSX.
  */
 import { useRef, useEffect, useState } from 'react'
 import { mount } from '@reatom/jsx'
 import { Card } from '../../../shared/components/Card'
 import { formatNumber } from '../../../shared/utils/format'
-import { renderTeams, isLive, registerLivePatch } from '../model'
-import { buildTable, rowAtoms } from './leaderboard-table.reatom'
-import type { Team } from '@zendash/shared'
+import { teamsAtom, isLive } from '../model'
+import { buildLeaderboard } from './leaderboard-table.reatom'
 
 export function TeamLeaderboard() {
   const containerRef = useRef<HTMLDivElement>(null)
-  const builtRef = useRef(false)
+  const mountedRef = useRef<{ unmount: () => void } | null>(null)
   const [header, setHeader] = useState({ count: 0, live: false })
 
-  // Build reatom JSX table on initial data
   useEffect(() => {
-    const unsub = renderTeams.subscribe((teams) => {
-      if (!containerRef.current || teams.length === 0) return
-      setHeader(h => ({ ...h, count: teams.length }))
+    if (!containerRef.current) return
 
-      if (!builtRef.current) {
-        const el = buildTable(teams)
-        containerRef.current.textContent = ''
-        // Use reatom's mount() to activate reactive subscriptions
-        const { unmount } = mount(containerRef.current, el as any)
-        builtRef.current = true
-      } else {
-        // Filter change — update all row atoms
-        for (const t of teams) {
-          const a = rowAtoms.get(t.id)
-          if (a) a.set(t)
-        }
-      }
+    // Build reatom JSX element and mount it — activates reactive subscriptions
+    const el = buildLeaderboard()
+    const handle = mount(containerRef.current, el as any)
+    mountedRef.current = handle
+
+    return () => {
+      handle.unmount()
+      mountedRef.current = null
+    }
+  }, [])
+
+  // Track header state
+  useEffect(() => {
+    const unsub = teamsAtom.subscribe((teams) => {
+      setHeader(h => ({ ...h, count: teams.length }))
     })
     return unsub
   }, [])
 
-  // Live badge
   useEffect(() => {
     const unsub = isLive.subscribe((live) => {
       setHeader(h => ({ ...h, live }))
     })
     return unsub
-  }, [])
-
-  // Live patch — set row atoms, reatom JSX handles DOM updates
-  useEffect(() => {
-    registerLivePatch((teams: Team[]) => {
-      for (const t of teams) {
-        const a = rowAtoms.get(t.id)
-        if (a) a.set(t)
-      }
-    })
-    return () => registerLivePatch(null)
   }, [])
 
   return (

@@ -88,38 +88,23 @@ export const qualityData = computed(() => overviewResource.data()?.quality ?? nu
 // ---------------------------------------------------------------------------
 // 4. Teams — two-array approach
 //
-//    Array 1 (freshestTeams): plain JS variable, always latest SSE data. Zero cost.
-//    Array 2 (renderTeams):   reatom atom, used for rendering. Updated every TEAM_FLUSH_MS.
-//                             No sorting — server sends in the order it wants.
+//    freshestTeams: plain JS array, updated every SSE event. Zero cost.
+//    teamsAtom:     single reatom atom<Team[]>, updated every TEAM_FLUSH_MS.
+//                   One atom, one .set(), one subscriber notification.
 // ---------------------------------------------------------------------------
 
-// Array 1 — always fresh, never triggers renders
 let freshestTeams: Team[] = []
 
-// Array 2 — for rendering (initial load + non-live)
-export const renderTeams = atom<Team[]>([], "overview.renderTeams")
-
-// Direct DOM patch callback — registered by TeamLeaderboard component
-let livePatchFn: ((teams: Team[]) => void) | null = null
-export function registerLivePatch(fn: ((teams: Team[]) => void) | null) {
-  livePatchFn = fn
-}
-
-// Read-only access to freshest teams (for initial DOM build)
-export function getFreshestTeams(): Team[] {
-  return freshestTeams
-}
+export const teamsAtom = atom<Team[]>([], "overview.teams")
 
 // Sync from resource on initial load
 effect(() => {
   overviewResource()
   const data = overviewResource.data()
-  console.log("[teams] effect fired, data:", !!data, "teams:", data?.teams?.length ?? 0)
   const raw = data?.teams
   if (!raw || raw.length === 0) return
   freshestTeams = raw
-  renderTeams.set(raw)
-  console.log("[teams] renderTeams set with", raw.length, "teams")
+  teamsAtom.set(raw)
 }, "overview.syncTeamsEffect")
 
 // ---------------------------------------------------------------------------
@@ -132,7 +117,7 @@ let eventSource: EventSource | null = null
 let pendingLiveData: FullLivePayload | null = null
 let rafId: number | null = null
 let teamFlushTimer: ReturnType<typeof setInterval> | null = null
-const TEAM_FLUSH_MS = 100
+const TEAM_FLUSH_MS = 300
 
 interface FullLivePayload extends LiveUpdate {
   teams?: Team[]
@@ -166,13 +151,7 @@ function applyLiveUpdate() {
 
 function flushTeamsToRender() {
   if (freshestTeams.length === 0) return
-  if (livePatchFn) {
-    // Fast path: direct DOM patch, skip React
-    livePatchFn(freshestTeams)
-  } else {
-    // Fallback: set atom, let React handle it
-    renderTeams.set(freshestTeams)
-  }
+  teamsAtom.set(freshestTeams)
 }
 
 export const startLive = action(() => {

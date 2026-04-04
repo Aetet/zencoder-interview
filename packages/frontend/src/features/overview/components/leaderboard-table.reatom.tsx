@@ -1,64 +1,44 @@
 /**
- * Reatom JSX table builder — returns real DOM elements.
- * Each row has one atom<Team>. Cell values are computed atoms.
+ * Reatom JSX table — subscribes to teamsAtom, renders reactively.
+ * No manual DOM patching. reatom/jsx handles all updates.
  *
- * This .reatom.tsx file is transformed by the reatomJsx vite plugin
- * using classic JSX with h/hf from @reatom/jsx.
+ * This .reatom.tsx file is transformed by the reatomJsx vite plugin.
  */
 import { h, hf } from '@reatom/jsx'
-import { atom, computed, type Atom } from '@reatom/core'
+import { computed } from '@reatom/core'
 import { formatCurrency, formatPercent, formatCurrencyPrecise } from '../../../shared/utils/format'
 import { navigate } from '../../../routes'
-import type { Team } from '@zendash/shared'
-
-export const rowAtoms = new Map<string, Atom<Team>>()
-
-export function getRowAtom(t: Team): Atom<Team> {
-  const existing = rowAtoms.get(t.id)
-  if (existing) {
-    existing.set(t)
-    return existing
-  }
-  const a = atom(t, `lb.row#${t.id}`)
-  rowAtoms.set(t.id, a)
-  return a
-}
-
-function TeamRow(team: Atom<Team>, rank: number) {
-  // Computed atoms for each cell — reatom JSX auto-subscribes to these
-  const name = computed(() => team().name, `lb.row#${team().id}.name`)
-  const sessions = computed(() => team().sessions.toLocaleString(), `lb.row#${team().id}.sessions`)
-  const cost = computed(() => formatCurrency(team().cost), `lb.row#${team().id}.cost`)
-  const rate = computed(() => formatPercent(team().completionRate), `lb.row#${team().id}.rate`)
-  const cps = computed(() => formatCurrencyPrecise(team().costPerSession), `lb.row#${team().id}.cps`)
-  const rateClass = computed(() =>
-    'py-2 px-4 text-[13px] tabular-nums live-value ' + (team().completionRate >= 0.85 ? 'text-success' : 'text-warning'),
-    `lb.row#${team().id}.rateClass`,
-  )
-
-  return (
-    <tr
-      class={rank % 2 === 0
-        ? 'border-b border-border cursor-pointer hover:bg-accent virtual-row bg-row-alt'
-        : 'border-b border-border cursor-pointer hover:bg-accent virtual-row'
-      }
-      on:click={() => navigate(`/teams?detail=${team().id}`)}
-    >
-      <td class="py-2 px-4 text-[11px] text-foreground-muted tabular-nums">{String(rank)}</td>
-      <td class="py-2 px-4 text-[13px] text-foreground font-medium truncate max-w-[160px]">{name}</td>
-      <td class="py-2 px-4 text-[13px] text-foreground tabular-nums live-value">{sessions}</td>
-      <td class="py-2 px-4 text-[13px] text-foreground tabular-nums live-value">{cost}</td>
-      <td class={rateClass}>{rate}</td>
-      <td class="py-2 px-4 text-[13px] text-foreground tabular-nums live-value">{cps}</td>
-    </tr>
-  )
-}
+import { teamsAtom } from '../model'
 
 const TH = 'text-[11px] font-medium uppercase tracking-[0.05em] text-foreground-muted text-left py-2.5 px-4'
+const TD = 'py-2 px-4 text-[13px] text-foreground tabular-nums live-value'
+const RANK = 'py-2 px-4 text-[11px] text-foreground-muted tabular-nums'
+const NAME = 'py-2 px-4 text-[13px] text-foreground font-medium truncate max-w-[160px]'
 
-export function buildTable(teams: Team[]): HTMLElement {
-  const rows = teams.map((t, i) => TeamRow(getRowAtom(t), i + 1))
+// Reactive row list — computed from teamsAtom, returns array of JSX elements
+const rows = computed(() => {
+  return teamsAtom().map((t, i) => {
+    const rank = i + 1
+    return (
+      <tr
+        class={rank % 2 === 0
+          ? 'border-b border-border cursor-pointer hover:bg-accent virtual-row bg-row-alt'
+          : 'border-b border-border cursor-pointer hover:bg-accent virtual-row'
+        }
+        on:click={() => navigate(`/teams?detail=${t.id}`)}
+      >
+        <td class={RANK}>{String(rank)}</td>
+        <td class={NAME}>{t.name}</td>
+        <td class={TD}>{t.sessions.toLocaleString()}</td>
+        <td class={TD}>{formatCurrency(t.cost)}</td>
+        <td class={`${TD} ${t.completionRate >= 0.85 ? 'text-success' : 'text-warning'}`}>{formatPercent(t.completionRate)}</td>
+        <td class={TD}>{formatCurrencyPrecise(t.costPerSession)}</td>
+      </tr>
+    )
+  })
+}, 'overview.teamRows')
 
+export function buildLeaderboard(): HTMLElement {
   return (
     <div class="overflow-auto px-0 virtual-scroll">
       <table class="w-full text-sm">
