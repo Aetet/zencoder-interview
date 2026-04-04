@@ -1,5 +1,5 @@
 import { reatomComponent } from '@reatom/react'
-import { overviewRoute } from '../overview-model'
+import { overviewRoute } from '../overview-route'
 import { cn } from '../../../shared/utils/cn'
 
 export const GoLiveButton = reatomComponent(() => {

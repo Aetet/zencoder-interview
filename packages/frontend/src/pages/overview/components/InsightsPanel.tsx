@@ -1,7 +1,7 @@
 import { reatomComponent } from '@reatom/react'
 import { Card } from '../../../shared/components/Card'
 import { cn } from '../../../shared/utils/cn'
-import { overviewRoute } from '../overview-model'
+import { overviewRoute } from '../overview-route'
 
 const borderColors: Record<string, string> = {
   highCostTeam: 'border-l-primary',

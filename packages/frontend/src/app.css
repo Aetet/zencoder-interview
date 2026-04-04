@@ -122,3 +122,15 @@ body {
   will-change: scroll-position;
   overflow-anchor: none;
 }
+
+/* Global progress bar */
+@keyframes progress-indeterminate {
+  0% { width: 0%; left: 0; }
+  50% { width: 40%; left: 30%; }
+  100% { width: 0%; left: 100%; }
+}
+
+.animate-progress {
+  position: relative;
+  animation: progress-indeterminate 1.2s ease-in-out infinite;
+}

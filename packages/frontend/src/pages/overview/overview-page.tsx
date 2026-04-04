@@ -1,5 +1,5 @@
 import { reatomComponent } from "@reatom/react"
-import { overviewRoute } from "./overview-model"
+import { overviewRoute } from "./overview-route"
 import { Skeleton } from "../../shared/components/Skeleton"
 import { KpiCards } from "./components/KpiCards"
 import { InsightsPanel } from "./components/InsightsPanel"

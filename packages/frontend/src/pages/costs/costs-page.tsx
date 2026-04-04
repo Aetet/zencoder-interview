@@ -1,5 +1,5 @@
 import { reatomComponent } from '@reatom/react'
-import { costsRoute } from './costs-model'
+import { costsRoute } from './costs-route'
 import { KpiCard } from '../../shared/components/KpiCard'
 import { Skeleton } from '../../shared/components/Skeleton'
 import { formatCurrency, formatCompact } from '../../shared/utils/format'

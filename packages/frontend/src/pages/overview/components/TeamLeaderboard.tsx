@@ -4,7 +4,8 @@ import { reatomComponent } from '@reatom/react'
 import { Card } from '../../../shared/components/Card'
 import { formatCurrency, formatPercent, formatCurrencyPrecise, formatNumber } from '../../../shared/utils/format'
 import { cn } from '../../../shared/utils/cn'
-import { overviewRoute } from '../overview-model'
+import { overviewRoute } from '../overview-route'
+import { teamRoute } from '../../teams/teams-route'
 import type { Team } from '@zendash/shared'
 
 const ROW_HEIGHT = 37
@@ -111,6 +112,7 @@ export const TeamLeaderboard = reatomComponent(() => {
                   height: ROW_HEIGHT,
                   transform: `translateY(${virtualRow.start}px)`,
                 }}
+                onClick={() => teamRoute.go({ teamId: t.id })}
               >
                 <TeamRow team={t} rank={virtualRow.index + 1} />
               </div>

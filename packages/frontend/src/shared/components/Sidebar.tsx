@@ -6,7 +6,7 @@ const NAV_ITEMS = [
   { label: 'Overview', route: overviewRoute },
   { label: 'Costs', route: costsRoute },
   { label: 'Teams', route: teamsRoute },
-  { label: 'Settings', route: settingsRoute },
+  { label: 'Alerts', route: settingsRoute },
 ]
 
 export const Sidebar = reatomComponent(() => {

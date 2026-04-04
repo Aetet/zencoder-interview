@@ -1,7 +1,7 @@
 import { reatomComponent } from '@reatom/react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { Card } from '../../../shared/components/Card'
-import { overviewRoute } from '../overview-model'
+import { overviewRoute } from '../overview-route'
 
 export const CostChart = reatomComponent(() => {
   const data = overviewRoute.costTrend()

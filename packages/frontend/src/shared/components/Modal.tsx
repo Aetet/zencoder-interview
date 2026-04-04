@@ -22,7 +22,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
       {/* Dialog */}
       <div
         className={cn(
-          'relative bg-card border border-border rounded-xl shadow-2xl w-full max-w-md p-6',
+          'relative bg-card border border-border rounded-xl shadow-2xl w-full max-w-sm p-5',
           className,
         )}
         onClick={(e) => e.stopPropagation()}

@@ -1,7 +1,7 @@
 import { reatomComponent } from '@reatom/react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { Card } from '../../../shared/components/Card'
-import { overviewRoute } from '../overview-model'
+import { overviewRoute } from '../overview-route'
 
 export const SessionsChart = reatomComponent(() => {
   const data = overviewRoute.sessionTrend()

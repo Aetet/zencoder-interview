@@ -1,5 +1,5 @@
 import { reatomComponent } from '@reatom/react'
-import { overviewRoute } from '../overview-model'
+import { overviewRoute } from '../overview-route'
 import { KpiCard } from '../../../shared/components/KpiCard'
 import { formatCurrency, formatNumber, formatPercent, formatCurrencyPrecise } from '../../../shared/utils/format'
 

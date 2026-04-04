@@ -216,12 +216,12 @@ describe('GET /api/quality/tier1', () => {
   })
 })
 
-describe('POST /api/alerts', () => {
+describe('POST /api/budgets', () => {
   it('saves valid budget config', async () => {
-    const res = await app.request('/api/alerts', {
+    const res = await app.request('/api/budgets', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ monthlyBudget: 5000, thresholds: [50, 75, 100] }),
+      body: JSON.stringify({ monthlyBudget: 5000 }),
     })
     expect(res.status).toBe(200)
     const body = await res.json()
@@ -229,49 +229,80 @@ describe('POST /api/alerts', () => {
   })
 
   it('rejects negative budget', async () => {
-    const res = await app.request('/api/alerts', {
+    const res = await app.request('/api/budgets', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ monthlyBudget: -100, thresholds: [50] }),
-    })
-    expect(res.status).toBe(400)
-  })
-
-  it('rejects empty thresholds', async () => {
-    const res = await app.request('/api/alerts', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ monthlyBudget: 5000, thresholds: [] }),
-    })
-    expect(res.status).toBe(400)
-  })
-
-  it('rejects invalid threshold values', async () => {
-    const res = await app.request('/api/alerts', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ monthlyBudget: 5000, thresholds: [150] }),
+      body: JSON.stringify({ monthlyBudget: -100 }),
     })
     expect(res.status).toBe(400)
   })
 
   it('persists budget change', async () => {
-    await app.request('/api/alerts', {
+    await app.request('/api/budgets', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ monthlyBudget: 8000, thresholds: [50, 90] }),
+      body: JSON.stringify({ monthlyBudget: 8000 }),
     })
-    const res = await app.request('/api/alerts')
+    const res = await app.request('/api/budgets')
     const body = await res.json()
     expect(body.monthlyBudget).toBe(8000)
-    expect(body.thresholds).toEqual([50, 90])
 
     // Restore default
-    await app.request('/api/alerts', {
+    await app.request('/api/budgets', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ monthlyBudget: 6000, thresholds: [50, 75, 90, 100] }),
+      body: JSON.stringify({ monthlyBudget: 6000 }),
     })
+  })
+
+  it('persists team budget overrides', async () => {
+    const overrides = { backend: 500, frontend: 300 }
+    await app.request('/api/budgets', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ monthlyBudget: 6000, teamOverrides: overrides }),
+    })
+    const res = await app.request('/api/budgets')
+    const body = await res.json()
+    expect(body.teamOverrides).toEqual(overrides)
+
+    // Restore default
+    await app.request('/api/budgets', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ monthlyBudget: 6000, teamOverrides: {} }),
+    })
+  })
+})
+
+describe('GET /api/alerts', () => {
+  it('returns array of alert events', async () => {
+    const res = await app.request('/api/alerts')
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(Array.isArray(body)).toBe(true)
+  })
+
+  it('each alert has required fields', async () => {
+    const res = await app.request('/api/alerts')
+    const body = await res.json()
+    if (body.length > 0) {
+      const alert = body[0]
+      expect(alert.id).toBeDefined()
+      expect(alert.type).toBeDefined()
+      expect(alert.severity).toBeDefined()
+      expect(alert.title).toBeDefined()
+      expect(alert.description).toBeDefined()
+      expect(alert.timestamp).toBeDefined()
+      expect(['error', 'warning', 'info']).toContain(alert.severity)
+      expect(['budget_exceeded', 'threshold_reached', 'spend_spike', 'anomaly']).toContain(alert.type)
+    }
+  })
+
+  it('returns max 25 alerts', async () => {
+    const res = await app.request('/api/alerts')
+    const body = await res.json()
+    expect(body.length).toBeLessThanOrEqual(25)
   })
 })
 

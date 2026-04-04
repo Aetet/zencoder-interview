@@ -1,4 +1,4 @@
-import { connectLogger, log } from "@reatom/core"
+import { log } from "@reatom/core"
 import { createRoot } from "react-dom/client"
 import { App } from "./App"
 import "./app.css"

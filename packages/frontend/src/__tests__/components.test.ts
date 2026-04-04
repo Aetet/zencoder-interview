@@ -6,8 +6,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import { parseHTML } from 'linkedom'
-import { formatCurrency, formatNumber, formatPercent, formatCurrencyPrecise, formatTimeAgo, formatCompact } from '../shared/utils/format'
-import { cn } from '../shared/utils/cn'
+import { formatCurrency, formatNumber, formatPercent, formatCurrencyPrecise } from '../shared/utils/format'
 
 function dom(html: string) {
   return parseHTML(`<!DOCTYPE html><html><body>${html}</body></html>`).document

@@ -240,25 +240,26 @@
 
 | # | Test | Assert |
 |---|---|---|
-| 4.1 | Team comparison table renders all teams | 6 rows in table body |
-| 4.2 | Table headers present | TEAM, SESSIONS, COST, COMPLETION, COST/SESSION, CACHE HIT |
-| 4.3 | Low cache rate highlighted in red | Frontend row's cache cell has error color |
-| 4.4 | Clicking team row navigates to detail | `teamDetailRoute.go` called with correct teamId |
-| 4.5 | Team detail shows KPI cards scoped to team | 5 cards with team-specific values |
-| 4.6 | User table renders user emails | `getByText('alice@co.com')` |
-| 4.7 | Model usage chart renders | Donut chart or legend with Haiku/Sonnet/Opus |
+| 4.1 | All teams grid renders with virtualized rows | Visible rows present, total height matches team count × row height |
+| 4.2 | Grid headers present | TEAM, SESSIONS, COMPLETION, SPENT/BUDGET, COST/SESS, CACHE, BUDGET |
+| 4.3 | Team tabs render | "All Teams" button + team name buttons visible |
+| 4.4 | Clicking team tab navigates to detail | URL changes to `/teams/:teamId` |
+| 4.5 | Team detail shows 5 KPI cards | Budget, Sessions, Completion, Cost/Session, Cache Hit |
+| 4.6 | Budget KPI card shows spent/budget with progress bar | `$0.49 / $1.00` format with colored bar |
+| 4.7 | Clicking budget card opens edit modal | Modal with budget input visible |
+| 4.8 | Edit modal URL is `/teams/:teamId?edit` | Search param check |
+| 4.9 | User table renders team members | Table with user rows, emails visible |
+| 4.10 | Coins icon opens org budget modal on all-teams page | Modal with budget input at `/teams?edit` |
 
-### Comp-5: Settings Page
+### Comp-5: Alerts Page
 
 | # | Test | Assert |
 |---|---|---|
-| 5.1 | Budget input renders with current value | Input value = '6000' |
-| 5.2 | Alert threshold checkboxes render | 4 checkboxes for 50/75/90/100% |
-| 5.3 | Team budget table renders | 6 rows with team names |
-| 5.4 | Over-budget team shows red indicator | Frontend row has red bar + "Over" badge |
-| 5.5 | Save button disabled during submit | `disabled` attr when `submit.ready() === false` |
-| 5.6 | Save button enabled when idle | `disabled` attr absent when ready |
-| 5.7 | Changing budget input updates atom | Type '5000' → atom value changes |
+| 5.1 | Alert thresholds render | 4 toggles for 50/75/90/100% |
+| 5.2 | Alert delivery toggles render | Email and in-app notification toggles |
+| 5.3 | Anomaly detection toggle renders | Enabled toggle with description |
+| 5.4 | Alert history shows clickable items | Items with date, text, navigation arrow |
+| 5.5 | Clicking alert navigates to relevant page | Team alert → `/teams/:teamId`, cost alert → `/costs` |
 
 ### Comp-6: Filter Bar
 
@@ -332,22 +333,25 @@
 
 | # | Test | Steps | Assert |
 |---|---|---|---|
-| 5.1 | Teams page shows comparison table | Click "Teams" nav | Table with 6 teams |
-| 5.2 | Click team row drills down | Click "Backend" row | URL = `/teams/backend`, detail view loads |
-| 5.3 | Team detail shows KPIs | Load team detail | 5 KPI cards with team-scoped values |
-| 5.4 | User table shows team members | Load team detail | Table with user rows, emails visible |
-| 5.5 | Back to all teams works | Click "All Teams" tab or back | Comparison table re-renders |
+| 5.1 | Teams page shows virtualized grid | Click "Teams" nav | Grid with team rows, tabs above |
+| 5.2 | Click team row navigates to detail | Click "Backend" row | URL = `/teams/backend`, detail view loads |
+| 5.3 | Team detail shows KPI cards | Load team detail | 5 KPI cards including Budget with progress bar |
+| 5.4 | Budget card opens edit modal | Click budget card | Modal opens, URL has `?edit` |
+| 5.5 | Edit modal saves budget | Change value, click Save | Toast shown, modal closes, `?edit` removed |
+| 5.6 | "All Teams" tab returns to grid | Click "All Teams" tab | Grid visible instantly (no remount delay) |
+| 5.7 | Org budget edit via coins icon | Click coins icon on all-teams | Modal opens at `/teams?edit` |
+| 5.8 | Team tabs show on both pages | Navigate between all/detail | Tabs visible on both views |
 
-### E2E-6: Settings & Budget Journey
+### E2E-6: Alerts & Budget Journey
 
 | # | Test | Steps | Assert |
 |---|---|---|---|
-| 6.1 | Settings page loads | Click "Settings" nav | Budget form visible |
-| 6.2 | Budget input editable | Clear input, type '5000' | Input value = '5000' |
-| 6.3 | Save budget works | Change budget, click Save | Success indicator, no error |
-| 6.4 | Budget reflected on Costs page | Save $5000 budget, go to Costs | Budget tracker shows $5000 |
-| 6.5 | Alert thresholds toggleable | Uncheck 50% checkbox | Checkbox unchecked |
-| 6.6 | Team budget over-budget indicator | Load settings | Frontend team shows red "Over" badge |
+| 6.1 | Alerts page loads | Click "Alerts" nav | Alert thresholds and history visible |
+| 6.2 | Alert thresholds toggleable | Toggle 50% threshold | Toggle state changes |
+| 6.3 | Alert history items navigate | Click team alert | Navigates to `/teams/:teamId` |
+| 6.4 | Org budget editable from teams | Go to Teams, click coins icon | Modal with budget input opens |
+| 6.5 | Save org budget | Change budget, click Save | Toast confirms, modal closes |
+| 6.6 | Team budget editable | Go to team detail, click budget card | Modal opens with current budget |
 
 ### E2E-7: CSV Export
 
@@ -391,9 +395,112 @@
 |---|---|---|
 | Unit: Backend API (API-1 through API-11) | 52 | ~5s |
 | Unit: Reatom State (State-1 through State-7) | 37 | ~3s |
-| Component: UI (Comp-1 through Comp-7) | 35 | ~8s |
-| E2E: Playwright (E2E-1 through E2E-10) | 34 | ~60s |
-| **Total** | **158** | **~76s** |
+| Component: UI (Comp-1 through Comp-7) | 38 | ~8s |
+| E2E: Playwright (E2E-1 through E2E-10) | 37 | ~60s |
+| **Total** | **168** | **~76s** |
+
+---
+
+## Budget Distribution Tests (2026-04-04)
+
+### BD-1: Auto-distribution
+
+| # | Test | Assert |
+|---|---|---|
+| 1.1 | 6 teams, budget $600, no overrides | Each team gets $100 |
+| 1.2 | 6 teams, budget $600, 1 override of $300 | Override team: $300, remaining 5 get $60 each |
+| 1.3 | 6 teams, budget $600, 3 overrides totaling $450 | Override teams keep values, remaining 3 get $50 each |
+| 1.4 | All teams overridden | Each team gets its override, no auto-distribution |
+| 1.5 | Auto budget < $1 | Clamped to $1 |
+| 1.6 | Single team, no override | Gets full budget |
+
+### BD-2: Team budget edit — increase
+
+| # | Test | Assert |
+|---|---|---|
+| 2.1 | Team at $100, user sets $200 | Warning: "increased by $100" |
+| 2.2 | Save increased override | Override stored, other auto teams recalculated lower |
+| 2.3 | Increase leaves auto teams ≥ $1 | Save succeeds |
+
+### BD-3: Team budget edit — decrease
+
+| # | Test | Assert |
+|---|---|---|
+| 3.1 | Team at $200, user sets $100 | Info: "decreased by $100, redistributed" |
+| 3.2 | Save decreased override | Override stored, other auto teams recalculated higher |
+
+### BD-4: Team budget edit — remove override
+
+| # | Test | Assert |
+|---|---|---|
+| 4.1 | Clear input | Override removed, team returns to auto |
+| 4.2 | Info shows "auto-calculated budget" | UI feedback present |
+
+### BD-5: Org budget — lower than spend
+
+| # | Test | Assert |
+|---|---|---|
+| 5.1 | Current spend $500, set budget to $400 | Error toast, save blocked |
+| 5.2 | Input remains at $400 | User can correct |
+
+### BD-6: Org budget — lower than sum of overrides
+
+| # | Test | Assert |
+|---|---|---|
+| 6.1 | Overrides sum $500, set budget to $400 | Yellow warning with team list |
+| 6.2 | Warning lists 6 most expensive | Format: "TeamA ($X→$Y), ..." |
+| 6.3 | More than 6 overrides shows "and N more" | Truncated list |
+| 6.4 | Save shrinks overrides proportionally | Each: `override * (400/500)` |
+| 6.5 | Shrunk override below $1 clamped to $1 | Minimum enforced |
+| 6.6 | Shrunk overrides saved to localStorage | Persisted |
+
+### BD-7: Org budget — zero or negative
+
+| # | Test | Assert |
+|---|---|---|
+| 7.1 | Set budget to 0 | Error toast, save blocked |
+| 7.2 | Set budget to -100 | Error toast, save blocked |
+
+### BD-8: Edge cases
+
+| # | Test | Assert |
+|---|---|---|
+| 8.1 | All teams overridden, budget shrink | All overrides shrunk proportionally |
+| 8.2 | Budget increase after shrink | Overrides stay shrunk, auto teams benefit |
+| 8.3 | Override equals auto budget | Override stored, value doesn't change visually |
+
+### BD-9: Alert history generation
+
+Alert history is generated server-side from actual session costs vs budget config.
+
+**Three alert types:**
+1. `threshold_reached` — org total spend crossed a configured threshold (50%, 75%, 90%, 100%)
+2. `budget_exceeded` — a team's spend exceeds its allocated budget (override or auto-distributed)
+3. `spend_spike` — a team's daily cost is >2× its 7-day daily average
+
+| # | Test | Assert |
+|---|---|---|
+| 9.1 | Threshold alert fires when spend > threshold × budget | Budget $1000, threshold 50%, spend $600 → alert with `type: 'threshold_reached'` |
+| 9.2 | Threshold severity: 100% = error, 90% = warning, else info | Check severity for each threshold level |
+| 9.3 | No threshold alert when spend below threshold | Budget $1000, threshold 90%, spend $100 → no 90% alert |
+| 9.4 | Team budget exceeded with auto-distribution | Budget $300, 3 teams, no overrides → $100/team. Team A spends $150 → `budget_exceeded` alert |
+| 9.5 | Team budget exceeded with override | Budget $300, team A override $50. Team A spends $80 → `budget_exceeded` for A |
+| 9.6 | Team within budget → no alert | Team A spends $40, budget $100 → no `budget_exceeded` for A |
+| 9.7 | Override changes budget allocation | Budget $300, 3 teams. Override team A to $200 → B,C get $50 each. B spends $60 → `budget_exceeded` for B |
+| 9.8 | Spend spike when daily > 2× weekly avg | Team daily $10, weekly avg $4/day → `spend_spike` alert |
+| 9.9 | No spike when daily within normal range | Team daily $5, weekly avg $4/day → no spike alert |
+| 9.10 | Alert `teamId` is set for team alerts, null for org alerts | threshold_reached → `teamId: null`, budget_exceeded → `teamId: 'team-a'` |
+| 9.11 | Alerts sorted by timestamp descending | First alert is most recent |
+| 9.12 | Max 25 alerts returned | Even with many triggers, capped at 25 |
+
+### BD-10: Org budget edit modal
+
+| # | Test | Assert |
+|---|---|---|
+| 10.1 | Opens at `/teams?edit` | URL has `?edit` search param |
+| 10.2 | Pre-fills current budget value | Input shows current org budget |
+| 10.3 | Save updates budget atom and calls API | Budget persisted |
+| 10.4 | Close removes `?edit` from URL | URL returns to `/teams` |
 
 ---
 

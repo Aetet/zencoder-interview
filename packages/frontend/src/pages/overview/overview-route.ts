@@ -1,4 +1,4 @@
-import { atom, computed, action, reatomBoolean, reatomRoute, wrap } from '@reatom/core'
+import { atom, computed, action, reatomBoolean, reatomRoute, wrap, withChangeHook } from '@reatom/core'
 import { api } from '../../shared/api/client'
 import { filterParams } from '../../shared/filters/model'
 import type { Insight, QualityTier1, Team, LiveUpdate, DailySessionTrend, DailyCostTrend } from '@zendash/shared'
@@ -113,6 +113,11 @@ export const overviewRoute = reatomRoute({
     if (isLive()) stopLive()
     else startLive()
   }, 'overview.toggleLive')
+
+  // Stop live mode when navigating away from overview
+  route.match.extend(withChangeHook((isMatch) => {
+    if (!isMatch && isLive()) stopLive()
+  }))
 
   return {
     isLive, totalSessions, totalCost, completionRate, activeUsers,

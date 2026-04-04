@@ -1,13 +1,9 @@
 import { urlAtom } from '@reatom/core'
 
-export { overviewRoute } from '../features/overview/overview-model'
-export { costsRoute } from '../features/costs/costs-model'
-export { teamsRoute } from '../features/teams/teams-model'
-export { settingsRoute } from '../features/settings/settings-model'
-
-// Redirect / to /overview on initial load
-if (window.location.pathname === '/' || window.location.pathname === '') {
-  history.replaceState(null, '', '/overview')
-}
+export { rootRoute } from '../pages/root-route'
+export { overviewRoute } from '../pages/overview/overview-route'
+export { costsRoute } from '../pages/costs/costs-route'
+export { teamsRoute, teamRoute, editTeamRoute, editAllTeamRoute, editBudgetRoute } from '../pages/teams/teams-route'
+export { settingsRoute } from '../pages/settings/settings-route'
 
 export { urlAtom }

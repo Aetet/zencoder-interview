@@ -1,7 +1,6 @@
 import { defineConfig, type Plugin, transformWithEsbuild } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
-import { readFileSync } from 'fs'
 
 // Custom plugin: transform .reatom.tsx files with classic JSX (h/hf)
 function reatomJsx(): Plugin {

@@ -88,7 +88,8 @@ function generateTeams(count: number): MockTeam[] {
   return teams
 }
 
-const TEAM_COUNT = 1000
+declare const process: { env: Record<string, string | undefined> }
+const TEAM_COUNT = Number(process.env.TEAM_COUNT) || 1000
 const TEAM_DEFS: MockTeam[] = generateTeams(TEAM_COUNT)
 
 const FIRST_NAMES = ['alice', 'bob', 'carol', 'dave', 'eve', 'frank', 'grace', 'heidi', 'ivan', 'judy']
@@ -167,6 +168,6 @@ function generateSessions(teams: MockTeam[], users: MockUser[], days: number, pe
 export function generateMockData() {
   const teams = TEAM_DEFS
   const users = generateUsers(teams)
-  const sessions = generateSessions(teams, users, 30, 3000)
+  const sessions = generateSessions(teams, users, 30, 300)
   return { teams, users, sessions }
 }

@@ -6,10 +6,21 @@ function qs(params: Record<string, string>): string {
   return '?' + new URLSearchParams(filtered).toString()
 }
 
+async function handleResponse<T>(res: Response): Promise<T> {
+  if (!res.ok) {
+    let message = `API error: ${res.status}`
+    try {
+      const body = await res.json()
+      if (body.error) message = body.error
+    } catch { /* ignore parse errors */ }
+    throw new Error(message)
+  }
+  return res.json()
+}
+
 async function get<T>(path: string, params: Record<string, string> = {}): Promise<T> {
   const res = await fetch(`${BASE}${path}${qs(params)}`)
-  if (!res.ok) throw new Error(`API error: ${res.status}`)
-  return res.json()
+  return handleResponse(res)
 }
 
 async function post<T>(path: string, body: unknown): Promise<T> {
@@ -18,8 +29,7 @@ async function post<T>(path: string, body: unknown): Promise<T> {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   })
-  if (!res.ok) throw new Error(`API error: ${res.status}`)
-  return res.json()
+  return handleResponse(res)
 }
 
 export const api = {
@@ -45,7 +55,10 @@ export const api = {
     tier1: (params: Record<string, string>) => get<import('@zendash/shared').QualityTier1>('/quality/tier1', params),
   },
   alerts: {
-    get: () => get<import('@zendash/shared').AlertConfig>('/alerts'),
-    save: (config: import('@zendash/shared').AlertConfig) => post<{ success: boolean }>('/alerts', config),
+    list: () => get<import('@zendash/shared').AlertEvent[]>('/alerts'),
+  },
+  budgets: {
+    get: () => get<{ monthlyBudget: number; teamOverrides: Record<string, number> }>('/budgets'),
+    save: (config: { monthlyBudget: number; teamOverrides?: Record<string, number> }) => post<{ success: boolean }>('/budgets', config),
   },
 }
