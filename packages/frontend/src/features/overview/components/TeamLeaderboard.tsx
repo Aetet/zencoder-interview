@@ -1,23 +1,13 @@
-import { useState, useEffect } from 'react'
+import { reatomComponent } from '@reatom/react'
 import { Card } from '../../../shared/components/Card'
 import { formatCurrency, formatPercent, formatCurrencyPrecise, formatNumber } from '../../../shared/utils/format'
 import { navigate } from '../../../routes'
 import { cn } from '../../../shared/utils/cn'
-import { onTeamsUpdate, isLive } from '../model'
-import type { Team } from '@zendash/shared'
+import { teamsAtom, isLive } from '../model'
 
-export function TeamLeaderboard() {
-  const [teams, setTeams] = useState<Team[]>([])
-  const [live, setLive] = useState(false)
-
-  useEffect(() => {
-    onTeamsUpdate(setTeams)
-    const unsub = isLive.subscribe(setLive)
-    return () => {
-      onTeamsUpdate(null)
-      unsub()
-    }
-  }, [])
+export const TeamLeaderboard = reatomComponent(() => {
+  const teams = teamsAtom()
+  const live = isLive()
 
   return (
     <Card className="flex flex-col p-0 overflow-hidden">
@@ -72,4 +62,4 @@ export function TeamLeaderboard() {
       </div>
     </Card>
   )
-}
+}, 'TeamLeaderboard')

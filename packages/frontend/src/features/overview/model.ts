@@ -86,20 +86,15 @@ export const insightsList = computed(() => {
 export const qualityData = computed(() => overviewResource.data()?.quality ?? null, "overview.quality")
 
 // ---------------------------------------------------------------------------
-// 4. Teams — plain JS, no atoms
+// 4. Teams
 //
-//    freshestTeams: always latest SSE data. Zero cost.
-//    Component registers a callback via onTeamsUpdate(). Model calls it on flush.
+//    freshestTeams: plain JS array, updated by SSE every frame. Zero cost.
+//    teamsAtom:     single atom<Team[]>, updated every TEAM_FLUSH_MS. Drives the component.
 // ---------------------------------------------------------------------------
 
 let freshestTeams: Team[] = []
-let teamsListener: ((teams: Team[]) => void) | null = null
 
-export function onTeamsUpdate(fn: ((teams: Team[]) => void) | null) {
-  teamsListener = fn
-  // Immediately push current data if available
-  if (fn && freshestTeams.length > 0) fn(freshestTeams)
-}
+export const teamsAtom = atom<Team[]>([], "overview.teams")
 
 // Sync from resource on initial load
 effect(() => {
@@ -108,7 +103,7 @@ effect(() => {
   const raw = data?.teams
   if (!raw || raw.length === 0) return
   freshestTeams = raw
-  teamsListener?.(raw)
+  teamsAtom.set(raw)
 }, "overview.syncTeamsEffect")
 
 // ---------------------------------------------------------------------------
@@ -155,7 +150,7 @@ function applyLiveUpdate() {
 
 function flushTeamsToRender() {
   if (freshestTeams.length === 0) return
-  teamsListener?.(freshestTeams)
+  teamsAtom.set(freshestTeams)
 }
 
 export const startLive = action(() => {
