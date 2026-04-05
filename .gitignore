@@ -3,6 +3,10 @@ dist/
 .next/
 *.tsbuildinfo
 
+.claude
+
+.mcp.json
+
 # Env
 .env
 .env.local

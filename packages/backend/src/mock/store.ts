@@ -1,13 +1,16 @@
 import { generateMockData, type MockTeam, type MockUser, type MockSession } from './generator.js'
 
+interface BudgetConfig {
+  monthlyBudget: number
+  thresholds: number[]
+  teamOverrides: Record<string, number>
+}
+
 interface Store {
   teams: MockTeam[]
   users: MockUser[]
   sessions: MockSession[]
-  budget: {
-    monthlyBudget: number
-    thresholds: number[]
-  }
+  budget: BudgetConfig
 }
 
 const data = generateMockData()
@@ -19,6 +22,7 @@ export const store: Store = {
   budget: {
     monthlyBudget: 6000,
     thresholds: [50, 75, 90, 100],
+    teamOverrides: {},
   },
 }
 
@@ -54,4 +58,21 @@ export function filterSessions(params: {
   }
 
   return filtered
+}
+
+/** Compute per-team budget using auto-distribution */
+export function getTeamBudgets(): Record<string, number> {
+  const overrides = store.budget.teamOverrides
+  const teamIds = store.teams.map(t => t.id)
+  const totalBudget = store.budget.monthlyBudget
+  const overrideSum = Object.values(overrides).reduce((s, v) => s + v, 0)
+  const autoTeams = teamIds.filter(id => !(id in overrides))
+  const remaining = totalBudget - overrideSum
+  const autoBudget = autoTeams.length > 0 ? Math.max(1, remaining / autoTeams.length) : 0
+
+  const result: Record<string, number> = {}
+  for (const id of teamIds) {
+    result[id] = id in overrides ? overrides[id] : Math.round(autoBudget * 100) / 100
+  }
+  return result
 }

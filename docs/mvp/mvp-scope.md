@@ -24,7 +24,7 @@ The dashboard is a single-page app with a **left sidebar navigation**, **global 
 | Organization Overview | **Overview** | Org-wide snapshot: cost, sessions, adoption, insights | P0 — landing page |
 | Cost & Usage | **Costs** | Deep cost analysis: breakdowns, cache efficiency, budgets | P0 — core value prop |
 | Team & Users | **Teams** | Per-team and per-user metrics with drill-down | P0 — attribution |
-| Settings | **Settings** | Budget thresholds, alert configuration | P1 — enables alerts |
+| Alerts | **Alerts** | Alert thresholds, notification preferences | P1 — enables alerts |
 
 ### Views NOT in MVP
 
@@ -108,64 +108,83 @@ Sortable table: Team | Sessions | Cost | Completion Rate | Cost/Session. Default
 **Top Files Tables (bottom row):**
 Two side-by-side tables:
 
-| Top 10 Most-Read Files | Reads | Sessions | Token Cost |
-|---|---|---|---|
-| `src/services/payment.ts` | 342 | 89 | $8.21 |
-| ... | | | |
+| Top 10 Most-Read Files | Reads | Sessions |
+|---|---|---|
+| `src/services/payment.ts` | 342 | 89 |
+| ... | | |
 
-| Top 10 Most-Edited Files | Edits | Sessions | Churn (edits/session) |
-|---|---|---|---|
-| `src/api/routes.ts` | 156 | 67 | 2.3 |
-| ... | | | |
+| Top 10 Most-Edited Files | Edits | Sessions |
+|---|---|---|
+| `src/api/routes.ts` | 156 | 67 |
+| ... | | |
 
 ---
 
 ### 3.3 Teams & Users
 
-**Layout:** Team selector at top, team summary cards, user table, adoption chart.
+**Layout:** Team tabs at top (shared across all team views), content below.
 
-**Team Selector:**
-Dropdown or tab bar listing all teams. "All Teams" is default (shows comparison view).
+**URL Structure:**
+- `/teams` — all teams grid (exact match)
+- `/teams/:teamId` — single team detail
+- `/teams?edit` — org budget edit modal
+- `/teams/:teamId?edit` — team budget edit modal
 
-**Comparison View (All Teams):**
-Table with sparklines:
+**All Teams View (`/teams`):**
+- Header: "All Teams" + coins icon (opens org budget modal)
+- Virtualized grid (1000+ teams, `@tanstack/react-virtual`):
 
-| Team | Sessions | Cost | Completion Rate | Cost/Session | Cache Hit Rate | Trend (30d) |
-|---|---|---|---|---|---|---|
-| Backend | 4,230 | $1,204 | 89% | $0.28 | 67% | sparkline |
-| Frontend | 3,102 | $1,456 | 84% | $0.47 | 23% | sparkline |
-| Platform | 2,891 | $892 | 91% | $0.31 | 71% | sparkline |
-| ... | | | | | | |
+| Team | Sessions | Completion | Spent / Budget | Cost/Sess | Cache |
+|---|---|---|---|---|---|
+| Backend | 95 | 89.5% | $0.49 / $1.00 | $0.01 | 25.4% |
 
-Click a row to drill into that team.
+- Click row → opens team budget edit modal (`?editTeam=:id`)
+- Click team name → navigates to `/teams/:teamId`
+- Numbers right-aligned for visual comparison
+- Org budget shown inline in header (total spent / total budget + coins icon)
+- Team tabs: "All Teams" (active) + first 10 teams + collapsible expand
 
-**Single Team View:**
-- Team KPI cards (same 5 as Overview, but scoped to this team)
+**Single Team View (`/teams/:teamId`):**
+- Header: team name + budget inline (spent / budget + coins icon for edit)
+- 4 KPI cards: Sessions, Completion Rate, Cost/Session, Cache Hit Rate
 - User table:
 
 | User | Sessions | Cost | Completion Rate | Cost/Session | Last Active |
 |---|---|---|---|---|---|
-| alice@co.com | 312 | $89 | 92% | $0.29 | 2h ago |
-| bob@co.com | 287 | $201 | 78% | $0.70 | 1d ago |
-| ... | | | | | |
+| alice@co.com | 312 | $89.00 | 92% | $0.29 | 2h ago |
 
-- Adoption chart: new users over time (line chart), usage frequency histogram (how many sessions per user per week)
-- Usage patterns: sessions by hour-of-day heatmap (simple grid), preferred model distribution (donut chart)
+- Model usage chart (donut)
+- Team tabs persist (shared layout via parent route)
+
+**Budget Edit Modal (`?edit`):**
+- Two route variants:
+  - From all-teams grid: `?editTeam=:id` (search-only on `teamsRoute`)
+  - From team detail: `inputParams`-driven (search-only on `teamRoute`, closed via `inputParams.set(null)`)
+- Input: monthly budget (USD)
+- Shows delta info (increase/decrease warning)
+- Save persists to server via `POST /api/budgets`
+- Close returns to previous view
+
+**Performance:** AllTeamsContent stays mounted (CSS `hidden`) when viewing team detail to avoid remount cost on back-navigation.
 
 ---
 
-### 3.4 Settings
+### 3.4 Alerts
 
-**Layout:** Simple form-based view.
+**Layout:** Two-column view. Left: alert configuration. Right: alert history.
 
-**Budget Configuration:**
-- Monthly budget amount (USD input)
-- Alert thresholds: checkboxes for 50%, 75%, 90%, 100% with notification toggle
-- Per-team budget overrides (optional)
+**Alert Configuration (left):**
+- Alert thresholds: toggles for 50%, 75%, 90%, 100% of monthly budget
+- Alert delivery: email, in-app notifications (toggles)
+- Anomaly detection: on/off toggle (alerts when daily spend exceeds 2x rolling average)
+- Slack integration: coming soon (disabled)
 
-**Notification Preferences:**
-- Alert delivery: email, in-app, or both
-- Anomaly detection: on/off toggle, sensitivity (low/medium/high)
+**Alert History (right):**
+- Clickable alert items with date, description, type indicator (error/warning/info)
+- Team alerts navigate to `/teams/:teamId`
+- Cost alerts navigate to `/costs`
+
+**Note:** Budget configuration moved to Teams page (coins icon → modal). See [Budget Distribution](./budget-distribution.md).
 
 ---
 
@@ -206,7 +225,7 @@ All endpoints accept query params: `?from=&to=&team_id=&user_id=&model=`
 ### 5.2 Mock Data Scale
 
 For the MVP demo/development, generate mock data:
-- 1 org, 6 teams, 50 users
+- 1 org, 1000 teams, ~3500 users
 - 30 days of session history
 - ~3,000 sessions total (100/day)
 - 3 model tiers (Haiku, Sonnet, Opus) with realistic price ratios
@@ -219,12 +238,14 @@ For the MVP demo/development, generate mock data:
 
 | Layer | Choice | Rationale |
 |---|---|---|
-| Framework | Next.js 14+ (App Router) | SSR for fast initial load, file-based routing |
-| UI Components | shadcn/ui + Tailwind CSS | Rapid UI development, accessible components |
-| Charts | Recharts or Tremor | React-native charting, good for dashboards |
-| State | URL search params + React Query | Filter state in URL (shareable), server state management |
-| API | Next.js API routes (mock) | Co-located mock API, easy to swap for real backend |
-| Data | In-memory mock data + JSON seed files | No database in MVP; mock API returns generated data |
+| Framework | Vite + React 19 | Fast dev server, modern React features |
+| UI Components | Custom + Tailwind CSS | Lightweight, full control, dark theme |
+| Charts | Recharts | React-native charting, good for dashboards |
+| State | Reatom v1000 | Reactive atoms, computed, route-based architecture |
+| Routing | `reatomRoute` (nested) | URL-driven state, loaders, render composition |
+| API | Hono (backend) + Hono RPC (client) | Type-safe API calls, lightweight |
+| Data | In-memory mock data (1000 teams) | Seeded generator, realistic distributions |
+| Monorepo | pnpm workspaces | Shared types package |
 
 ---
 

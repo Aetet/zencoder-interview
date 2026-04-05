@@ -15,7 +15,7 @@ interface DataTableProps<T> {
 
 export function DataTable<T>({ columns, data, onRowClick }: DataTableProps<T>) {
   return (
-    <table className="w-full text-sm">
+    <table className="w-full text-sm table-fixed">
       <thead>
         <tr className="border-b border-border">
           {columns.map((col) => (

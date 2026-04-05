@@ -1,5 +1,5 @@
 import { reatomFactoryComponent } from '@reatom/react'
-import { atom, effect, wrap } from '@reatom/core'
+import { atom, effect } from '@reatom/core'
 
 const fps = atom(0, 'debug.fps')
 const frameTimes = atom<number[]>([], 'debug.frameTimes')

@@ -1,4 +1,6 @@
 import { Hono } from 'hono'
+import { zValidator } from '@hono/zod-validator'
+import { filterQuerySchema } from '@zendash/shared/schemas'
 import { filterSessions } from '../mock/store.js'
 import type { TopFilesData } from '@zendash/shared'
 
@@ -21,44 +23,40 @@ const FILE_PATHS = [
 ]
 
 export const files = new Hono()
+  .get('/top', zValidator('query', filterQuerySchema), (c) => {
+    const { range, team_id, model } = c.req.valid('query')
+    const params = { range: range ?? '30d', team_id, model }
 
-files.get('/top', (c) => {
-  const params = {
-    range: c.req.query('range') ?? '30d',
-    team_id: c.req.query('team_id'),
-    model: c.req.query('model'),
-  }
+    const filtered = filterSessions(params)
+    const totalSessions = filtered.length
 
-  const filtered = filterSessions(params)
-  const totalSessions = filtered.length
+    // Simulate file access patterns based on session count
+    const mostRead = FILE_PATHS.slice(0, 10).map((path, i) => {
+      const weight = 1 - i * 0.08
+      const count = Math.round(totalSessions * weight * (0.8 + Math.random() * 0.4))
+      const sessionCount = Math.round(count * (0.2 + Math.random() * 0.3))
+      return {
+        path,
+        count,
+        sessions: Math.min(sessionCount, totalSessions),
+        cost: Math.round(count * 0.024 * 100) / 100,
+        churn: 0,
+      }
+    }).sort((a, b) => b.count - a.count)
 
-  // Simulate file access patterns based on session count
-  const mostRead = FILE_PATHS.slice(0, 10).map((path, i) => {
-    const weight = 1 - i * 0.08
-    const count = Math.round(totalSessions * weight * (0.8 + Math.random() * 0.4))
-    const sessionCount = Math.round(count * (0.2 + Math.random() * 0.3))
-    return {
-      path,
-      count,
-      sessions: Math.min(sessionCount, totalSessions),
-      cost: Math.round(count * 0.024 * 100) / 100,
-      churn: 0,
-    }
-  }).sort((a, b) => b.count - a.count)
+    const mostEdited = FILE_PATHS.slice(2, 12).map((path, i) => {
+      const weight = 0.6 - i * 0.05
+      const count = Math.round(totalSessions * weight * (0.5 + Math.random() * 0.5))
+      const sessionCount = Math.round(count * (0.3 + Math.random() * 0.4))
+      return {
+        path,
+        count,
+        sessions: Math.min(sessionCount, totalSessions),
+        cost: Math.round(count * 0.018 * 100) / 100,
+        churn: Math.round((count / Math.max(sessionCount, 1)) * 10) / 10,
+      }
+    }).sort((a, b) => b.count - a.count)
 
-  const mostEdited = FILE_PATHS.slice(2, 12).map((path, i) => {
-    const weight = 0.6 - i * 0.05
-    const count = Math.round(totalSessions * weight * (0.5 + Math.random() * 0.5))
-    const sessionCount = Math.round(count * (0.3 + Math.random() * 0.4))
-    return {
-      path,
-      count,
-      sessions: Math.min(sessionCount, totalSessions),
-      cost: Math.round(count * 0.018 * 100) / 100,
-      churn: Math.round((count / Math.max(sessionCount, 1)) * 10) / 10,
-    }
-  }).sort((a, b) => b.count - a.count)
-
-  const result: TopFilesData = { mostRead, mostEdited }
-  return c.json(result)
-})
+    const result: TopFilesData = { mostRead, mostEdited }
+    return c.json(result)
+  })

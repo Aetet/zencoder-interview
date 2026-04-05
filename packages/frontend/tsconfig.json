@@ -2,10 +2,10 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "jsx": "react-jsx",
-    "outDir": "dist",
-    "rootDir": "src",
+    "noEmit": true,
     "paths": {
-      "@zendash/shared": ["../shared/src/types.ts"]
+      "@zendash/shared": ["../shared/src/types.ts"],
+      "@zendash/shared/schemas": ["../shared/src/schemas.ts"]
     }
   },
   "include": ["src"]

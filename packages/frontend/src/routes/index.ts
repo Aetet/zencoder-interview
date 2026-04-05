@@ -1,13 +1,9 @@
-import { atom, action } from '@reatom/core'
+import { urlAtom } from '@reatom/core'
 
-// Simple path-based router atom
-export const currentPath = atom(window.location.pathname, 'router.path')
+export { rootRoute } from '../pages/root-route'
+export { overviewRoute } from '../pages/overview/overview-route'
+export { costsRoute } from '../pages/costs/costs-route'
+export { teamsRoute, teamRoute, editTeamRoute, editAllTeamRoute, editBudgetRoute } from '../pages/teams/teams-route'
+export { settingsRoute } from '../pages/settings/settings-route'
 
-export const navigate = action((path: string) => {
-  window.history.pushState({}, '', path)
-  currentPath.set(path)
-}, 'router.navigate')
-
-window.addEventListener('popstate', () => {
-  currentPath.set(window.location.pathname)
-})
+export { urlAtom }

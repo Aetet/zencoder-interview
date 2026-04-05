@@ -8,18 +8,25 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@number-flow/react": "^0.6.0",
     "@reatom/core": "1000.15.2",
+    "@reatom/jsx": "^1000.1.0",
     "@reatom/react": "1000.2.2",
+    "@tanstack/react-virtual": "^3.13.23",
     "@zendash/shared": "workspace:*",
+    "backend": "workspace:^",
     "hono": "^4.7.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "recharts": "^2.15.0"
+    "recharts": "^2.15.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@hono/zod-validator": "^0.7.6",
     "@tailwindcss/vite": "^4.1.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",

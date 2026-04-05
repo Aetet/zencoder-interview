@@ -2,8 +2,8 @@
  * Extended state tests covering gaps from docs/mvp/test-cases.md
  * Covers: State-1 (1.1,1.2,1.5,1.6), State-2 (2.4,2.5), State-3, State-4, State-5, State-6
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { atom, computed, reatomBoolean, action } from '@reatom/core'
+import { describe, it, expect } from 'vitest'
+import { atom, computed, reatomBoolean } from '@reatom/core'
 
 // --- State-1 gaps ---
 

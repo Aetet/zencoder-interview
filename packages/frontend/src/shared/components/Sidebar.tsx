@@ -1,17 +1,15 @@
 import { reatomComponent } from '@reatom/react'
-import { currentPath, navigate } from '../../routes'
+import { overviewRoute, costsRoute, teamsRoute, settingsRoute } from '../../routes'
 import { cn } from '../utils/cn'
 
 const NAV_ITEMS = [
-  { label: 'Overview', path: '/' },
-  { label: 'Costs', path: '/costs' },
-  { label: 'Teams', path: '/teams' },
-  { label: 'Settings', path: '/settings' },
+  { label: 'Overview', route: overviewRoute },
+  { label: 'Costs', route: costsRoute },
+  { label: 'Teams', route: teamsRoute },
+  { label: 'Alerts', route: settingsRoute },
 ]
 
 export const Sidebar = reatomComponent(() => {
-  const path = currentPath()
-
   return (
     <aside className="w-[220px] min-h-screen bg-background-secondary flex flex-col shrink-0">
       <div className="flex items-center gap-2 px-6 py-6">
@@ -21,16 +19,14 @@ export const Sidebar = reatomComponent(() => {
 
       <nav className="flex flex-col mt-2">
         {NAV_ITEMS.map((item) => {
-          const isActive = item.path === '/'
-            ? path === '/'
-            : path.startsWith(item.path)
+          const isActive = item.route.match()
 
           return (
             <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
+              key={item.label}
+              onClick={() => item.route.go({})}
               className={cn(
-                'flex items-center h-10 px-10 text-sm text-left transition-colors',
+                'flex items-center h-10 px-10 text-sm text-left transition-colors cursor-pointer',
                 isActive
                   ? 'bg-accent text-accent-foreground border-l-[3px] border-primary'
                   : 'text-foreground-muted hover:text-foreground hover:bg-accent/50 border-l-[3px] border-transparent',

@@ -329,7 +329,171 @@ EventSource.onmessage
 
 ---
 
-## 10. Anti-Patterns Discovered
+## 10. Routing with `reatomRoute`
+
+### Route Hierarchy with Nested Routes
+
+Define parent/child routes using `.reatomRoute()`. Child routes inherit parent path. Use `.extend()` for derived state.
+
+```tsx
+export const teamsRoute = reatomRoute({
+  path: 'teams',
+  async loader() { ... },
+  render(self) {
+    return (
+      <div>
+        <TeamTabs />
+        <>{self.outlet()}</>
+      </div>
+    )
+  },
+}).extend((route) => {
+  const teamsList = computed(() => route.loader.data() ?? [], 'teams.list')
+  return { teamsList }
+})
+
+export const teamRoute = teamsRoute.reatomRoute({
+  path: ':teamId',
+  async loader({ teamId }) { ... },
+  render() { return <TeamPage /> },
+}).extend((route) => {
+  const selectedTeamId = computed(() => route()?.teamId ?? null, 'team.selectedId')
+  return { selectedTeamId }
+})
+```
+
+### Search-Only Modal Routes
+
+Open modals via search params — no path change. The `params` function validates: return object to match, `null` to reject.
+
+```ts
+// /teams/:teamId?edit — opens modal, /teams/:teamId — closes it
+export const editTeamRoute = teamRoute.reatomRoute({
+  params({ edit }: { edit?: string }) {
+    return edit !== undefined ? { edit } : null
+  },
+}).extend((edit) => {
+  const isOpen = computed(() => edit() !== null, 'editTeam.isOpen')
+  const open = action(() => { edit.go({ teamId, edit: '' }) }, 'editTeam.open')
+  const close = action(() => { teamRoute.go({ teamId }) }, 'editTeam.close')
+  return { isOpen, open, close }
+})
+```
+
+### Parent Layout with `outlet()`
+
+`render(self)` receives the route with non-null params. `self.outlet()` returns active child renders.
+
+```tsx
+render(self) {
+  const loading = !self.loader.ready() && !self.loader.data()
+  return (
+    <div>
+      <SharedLayout />
+      {loading ? <Skeleton /> : <>{self.outlet()}</>}
+    </div>
+  )
+}
+```
+
+### `exact()` vs `match()`
+
+- **`match()`** — true for prefix match. Use in parent routes, sidebar active state.
+- **`exact()`** — true only on exact URL match. Use to distinguish index vs child content.
+
+```tsx
+// Sidebar uses match() — highlights "Teams" for /teams and /teams/backend
+const isActive = item.route.match()
+
+// Parent render uses exact() — show grid on /teams, child on /teams/:id
+const isExact = self.exact()
+```
+
+### Route Matching in `App.tsx`
+
+Use `route.render()` for composed routes — returns JSX if matched, `null` otherwise.
+
+```tsx
+const App = reatomComponent(() => {
+  const teamsRendered = teamsRoute.render()
+
+  if (costsRoute.match()) return <CostsPage />
+  if (teamsRendered) return teamsRendered
+  if (settingsRoute.match()) return <SettingsPage />
+  return <OverviewPage />
+}, 'App')
+```
+
+### Keeping Components Mounted (Performance)
+
+Use CSS `hidden` to avoid remounting expensive components on child navigation:
+
+```tsx
+render(self) {
+  const isExact = self.exact()
+  return (
+    <>
+      <div className={isExact ? "contents" : "hidden"}><AllTeamsContent /></div>
+      {!isExact && <>{self.outlet()}</>}
+    </>
+  )
+}
+```
+
+Preserves scroll position, virtualizer state, and avoids re-render cost on back-navigation.
+
+### Search-Only Child Routes: `inputParams` Behavior
+
+Routes with `params` function (no `search` schema) are **`inputParams`-driven, not URL-driven**. The `params` function never produces URL search params — the modal state lives entirely in the `inputParams` atom. The URL doesn't change.
+
+**How `go()` works internally** (from reatom source, `route.ts:770-782`):
+1. `inputParams.set(params)` — sets state immediately
+2. `getPath(params)` — builds URL path from parent chain
+3. `urlAtom.set(newUrl)` — navigates
+
+**Two contexts for search-only modal routes:**
+
+| Context | Parent | `go({})` for close | Works? |
+|---|---|---|---|
+| `editAllTeamRoute` | `teamsRoute` (path: `teams`) | Builds `/teams` — no dynamic params needed | ✅ |
+| `editTeamRoute` | `teamRoute` (path: `teams/:teamId`) | Needs `teamId` for `/teams/:teamId` — throws | ❌ |
+
+**Why `editTeamRoute` can't use `go({})` to close:**
+- `getPath({})` iterates `patternParts = ['teams', ':teamId']`
+- Hits `:teamId`, checks `'teamId' in pathParams` — not found
+- Throws `Missing param "teamId"` — but `inputParams` was already set in step 1
+- `inputParams` stays stale → `isOpen` stays `true`
+- Navigating via `teamRoute.go({ teamId })` doesn't touch `editTeamRoute`'s `inputParams`
+
+**Solution:** reset `inputParams` directly to close:
+
+```ts
+const editTeamRoute = teamRoute.reatomRoute({
+  params({ edit, teamId }: { edit?: string; teamId?: string }) {
+    return edit === 'true' ? { edit, teamId: teamId ?? '' } : null
+  },
+}).extend((edit) => {
+  const isOpen = computed(() => edit() !== null, 'editTeam.isOpen')
+
+  const open = action(() => {
+    const teamId = teamRoute.selectedTeamId()
+    if (!teamId) return
+    edit.go({ teamId, edit: 'true' })  // sets inputParams, getPath succeeds
+  }, 'editTeam.open')
+
+  const close = action(() => {
+    edit.inputParams.set(null)  // route computed falls through to URL parsing → null
+  }, 'editTeam.close')
+
+  return { isOpen, open, close }
+})
+```
+
+`inputParams.set(null)` forces the route computed to parse the URL instead. The URL has no `?edit=true` (it was never there — `params` routes are not URL-driven), so the route returns `null`, `isOpen` becomes `false`.
+
+---
+
+## 11. Anti-Patterns Discovered
 
 ### Don't write to `withAsyncData`'s `.data` atom during live mode
 
@@ -371,3 +535,24 @@ Use a plain React component with `useRef` + imperative DOM.
 ```
 
 Use `document.querySelector` or stable refs instead.
+
+### Don't use `reatomComponent` per virtualized row
+
+```tsx
+// WRONG — 1000 subscriptions to the same atom
+const Row = reatomComponent(({ team }) => {
+  const budget = settingsRoute.computedTeamBudgets()
+  return <div>{budget[team.id]}</div>
+}, 'Row')
+
+// RIGHT — read once in parent, pass as props
+const Grid = reatomComponent(({ teams }) => {
+  const budgets = settingsRoute.computedTeamBudgets()
+  return virtualizer.getVirtualItems().map(row => {
+    const budget = budgets[teams[row.index].id]
+    return <PlainRow budget={budget} />  // plain function, no reatomComponent
+  })
+}, 'Grid')
+```
+
+Each `reatomComponent` creates subscriptions. With 1000 rows reading the same atom, that's 1000 redundant subscriptions.

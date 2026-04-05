@@ -132,6 +132,16 @@ export interface AlertConfig {
   thresholds: number[]
 }
 
+export interface AlertEvent {
+  id: string
+  type: 'budget_exceeded' | 'threshold_reached' | 'spend_spike' | 'anomaly'
+  severity: 'error' | 'warning' | 'info'
+  title: string
+  description: string
+  teamId: string | null
+  timestamp: string
+}
+
 export interface LiveUpdate {
   totalSessions: number
   totalCost: number

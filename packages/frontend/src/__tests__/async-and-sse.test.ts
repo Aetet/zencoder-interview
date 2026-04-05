@@ -2,7 +2,7 @@
  * Tests for SSE live mode, async submit, and CSV export.
  * Covers: API-11 (11.2-11.4), State-5 (5.5-5.6), State-6 (6.1-6.3), State-7 (7.3,7.5,7.6)
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import '../test/setup-dom'
 import { atom, reatomBoolean, action } from '@reatom/core'
 
@@ -193,7 +193,7 @@ describe('State-6: CSV export', () => {
     }) as any
 
     const clicks: string[] = []
-    const origCreate = document.createElement.bind(document)
+    const _origCreate = document.createElement.bind(document)
     // Track link creation
     const exportCsv = action(async () => {
       const res = await fetch('/api/export/overview?range=30d')

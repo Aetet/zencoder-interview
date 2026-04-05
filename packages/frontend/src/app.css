@@ -31,6 +31,10 @@
   --color-row-alt: rgba(246, 245, 243, 0.03);
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   background-color: var(--color-background);
   color: var(--color-foreground);
@@ -65,11 +69,46 @@ body {
   animation: live-flash 0.4s ease-out;
 }
 
+/* Fold/expand animation using CSS grid trick — no JS height calculation */
+.fold-enter {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 0.25s ease-out, opacity 0.2s ease-out;
+}
+
+.fold-enter.fold-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.fold-inner {
+  overflow: hidden;
+}
+
+/* Toast slide-in */
+@keyframes slideIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
 /* Smooth number counter transitions */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
   transition: all 0.2s ease-out;
 }
+
+/* Cell flash on value change */
+@keyframes flash-green {
+  0% { background-color: rgba(33, 139, 48, 0.3); }
+  100% { background-color: transparent; }
+}
+@keyframes flash-red {
+  0% { background-color: rgba(209, 0, 62, 0.3); }
+  100% { background-color: transparent; }
+}
+.flash-up { animation: flash-green 0.6s ease-out; }
+.flash-down { animation: flash-red 0.6s ease-out; }
 
 /* Row containment for scroll perf */
 .virtual-row {
@@ -82,4 +121,16 @@ body {
   contain: strict;
   will-change: scroll-position;
   overflow-anchor: none;
+}
+
+/* Global progress bar */
+@keyframes progress-indeterminate {
+  0% { width: 0%; left: 0; }
+  50% { width: 40%; left: 30%; }
+  100% { width: 0%; left: 100%; }
+}
+
+.animate-progress {
+  position: relative;
+  animation: progress-indeterminate 1.2s ease-in-out infinite;
 }

@@ -3,15 +3,15 @@ import { formatCurrency, formatCurrencyPrecise, formatNumber, formatPercent, for
 
 describe('formatCurrency', () => {
   it('formats whole dollars', () => {
-    expect(formatCurrency(4231)).toBe('$4,231')
+    expect(formatCurrency(4231)).toBe('$4,231.00')
   })
 
   it('formats zero', () => {
-    expect(formatCurrency(0)).toBe('$0')
+    expect(formatCurrency(0)).toBe('$0.00')
   })
 
   it('formats large numbers', () => {
-    expect(formatCurrency(1000000)).toBe('$1,000,000')
+    expect(formatCurrency(1000000)).toBe('$1,000,000.00')
   })
 })
 

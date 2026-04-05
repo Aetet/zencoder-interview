@@ -24,19 +24,22 @@ export function KpiCard({ label, value, delta, deltaType = 'neutral', live }: Kp
   }, [value, live])
 
   return (
-    <Card className={cn('py-5 px-6', flash && 'live-card')}>
-      <div className="text-[11px] font-medium uppercase tracking-[0.05em] text-foreground-muted mb-2">
+    <Card className={cn('py-5 px-6 overflow-hidden', flash && 'live-card')} title={`${label}: ${value}`}>
+      <div className="text-[11px] font-medium uppercase tracking-[0.05em] text-foreground-muted mb-2 truncate">
         {label}
         {live && (
           <span className="ml-2 inline-block w-1.5 h-1.5 rounded-full bg-error animate-pulse" />
         )}
       </div>
-      <div className={cn('text-[28px] font-semibold text-foreground tabular-nums leading-tight', live && 'live-value')}>
+      <div
+        className={cn('text-[28px] font-semibold text-foreground tabular-nums leading-tight truncate', live && 'live-value')}
+        title={value}
+      >
         {value}
       </div>
       {delta && (
         <div className={cn(
-          'text-xs mt-1',
+          'text-xs mt-1 truncate',
           deltaType === 'positive' && 'text-success',
           deltaType === 'negative' && 'text-error',
           deltaType === 'neutral' && 'text-foreground-muted',

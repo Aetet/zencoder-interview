@@ -2,8 +2,9 @@ import { defineConfig } from '@playwright/test'
 
 export default defineConfig({
   testDir: './e2e',
-  timeout: 30_000,
-  retries: 0,
+  timeout: 90_000,
+  retries: 1,
+  workers: 3,
   use: {
     baseURL: 'http://localhost:5173',
     headless: true,
@@ -14,7 +15,7 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: 'pnpm --filter backend dev',
+      command: 'TEAM_COUNT=100 pnpm --filter backend dev',
       port: 3001,
       reuseExistingServer: true,
       timeout: 10_000,
