@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { filterQuerySchema } from '@zendash/shared/schemas'
 import { streamSSE } from 'hono/streaming'
-import { pool, buildFilters, r2, num } from '../db.js'
+import { pool, buildFilters, rangeToInterval, r2, num } from '../db.js'
 import type { LiveUpdate, DailySessionTrend, DailyCostTrend } from '@zendash/shared'
 
 const POLL_INTERVAL_MS = 5_000
@@ -40,8 +40,7 @@ async function fetchLiveData(params: {
   const totalsResult = await pool.query(
     `SELECT COALESCE(SUM(total_sessions), 0) AS total,
             COALESCE(SUM(completed), 0) AS completed,
-            COALESCE(SUM(total_cost), 0) AS cost,
-            COALESCE(SUM(active_users), 0) AS users
+            COALESCE(SUM(total_cost), 0) AS cost
      FROM daily_session_summary ${f.where}`,
     f.params,
   )
@@ -49,7 +48,14 @@ async function fetchLiveData(params: {
   const totalSessions = num(t.total)
   const completed = num(t.completed)
   const totalCost = num(t.cost)
-  const activeUsers = num(t.users)
+
+  // Distinct active users
+  const activeResult = await pool.query(
+    `SELECT COUNT(DISTINCT user_id) AS cnt
+     FROM team_user_stats
+     WHERE date >= NOW() - INTERVAL '${rangeToInterval(params.range ?? '30d')}'`,
+  )
+  const activeUsers = num(activeResult.rows[0].cnt)
 
   // Daily session trend
   const trendResult = await pool.query(

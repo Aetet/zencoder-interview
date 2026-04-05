@@ -4,7 +4,7 @@ import { KpiCard } from '../../../shared/components/KpiCard'
 import { formatCurrency, formatNumber, formatPercent, formatCurrencyPrecise } from '../../../shared/utils/format'
 
 export const KpiCards = reatomComponent(() => {
-  const live = overviewRoute.isLive()
+  const live = overviewRoute.isLive() || overviewRoute.isTurbo()
 
   return (
     <div className="grid grid-cols-5 gap-4">

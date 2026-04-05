@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { filterQuerySchema } from '@zendash/shared/schemas'
-import { pool, buildFilters, r2, num } from '../db.js'
+import { pool, buildFilters, rangeToInterval, r2, num } from '../db.js'
 import type { SessionSummary, DailySessionTrend, DailyCostTrend } from '@zendash/shared'
 
 export const sessions = new Hono()
@@ -14,8 +14,7 @@ export const sessions = new Hono()
       `SELECT
         COALESCE(SUM(total_sessions), 0) AS total_sessions,
         COALESCE(SUM(completed), 0) AS completed,
-        COALESCE(SUM(total_cost), 0) AS total_cost,
-        COALESCE(SUM(active_users), 0) AS active_users
+        COALESCE(SUM(total_cost), 0) AS total_cost
       FROM daily_session_summary ${f.where}`,
       f.params,
     )
@@ -23,7 +22,14 @@ export const sessions = new Hono()
     const totalSessions = num(t.total_sessions)
     const completedSessions = num(t.completed)
     const totalCost = num(t.total_cost)
-    const activeUsers = num(t.active_users)
+
+    // Distinct active users from team_user_stats
+    const activeResult = await pool.query(
+      `SELECT COUNT(DISTINCT user_id) AS cnt
+       FROM team_user_stats
+       WHERE date >= NOW() - INTERVAL '${rangeToInterval(range ?? '30d')}'`,
+    )
+    const activeUsers = num(activeResult.rows[0].cnt)
 
     // Total users
     const usersResult = await pool.query('SELECT COUNT(*) AS cnt FROM users')

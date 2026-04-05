@@ -41,7 +41,7 @@ export const overviewRoute = reatomRoute({
     return route.loader.data() ?? INITIAL
   }
 
-  // Live override atoms
+  // Live override atoms (shared by both real-live and turbo)
   const liveKpis = atom<{
     totalSessions: number
     totalCost: number
@@ -55,8 +55,9 @@ export const overviewRoute = reatomRoute({
   const liveTeams = atom<Team[] | null>(null, "overview.liveTeams")
 
   const isLive = reatomBoolean(false, "overview.isLive")
+  const isTurbo = reatomBoolean(false, "overview.isTurbo")
 
-  // Computed KPIs
+  // Computed KPIs — fall back to loaded data when no live data
   const totalSessions = computed(
     () => liveKpis()?.totalSessions ?? data().summary.totalSessions,
     "overview.totalSessions",
@@ -78,7 +79,8 @@ export const overviewRoute = reatomRoute({
   const insightsList = computed(() => liveInsights() ?? data().insights, "overview.insightsList")
   const teams = computed(() => liveTeams() ?? data().teams, "overview.teams")
 
-  // SSE
+  // --- SSE connection management ---
+
   let eventSource: EventSource | null = null
   let pendingLiveData: FullLivePayload | null = null
   let rafId: number | null = null
@@ -102,10 +104,9 @@ export const overviewRoute = reatomRoute({
     if (d.teams) liveTeams.set(d.teams)
   }
 
-  const startLive = action(() => {
-    stopLive()
-    const params = new URLSearchParams({})
-    eventSource = new EventSource(`/api/overview/live?${params}`)
+  function connectSSE(url: string) {
+    disconnectSSE()
+    eventSource = new EventSource(url)
     eventSource.addEventListener("update", event => {
       try {
         pendingLiveData = JSON.parse(event.data)
@@ -115,13 +116,13 @@ export const overviewRoute = reatomRoute({
       }
     })
     eventSource.onerror = () => {
-      stopLive()
+      disconnectSSE()
       isLive.setFalse()
+      isTurbo.setFalse()
     }
-    isLive.setTrue()
-  }, "overview.startLive")
+  }
 
-  const stopLive = action(() => {
+  function disconnectSSE() {
     if (rafId !== null) {
       cancelAnimationFrame(rafId)
       rafId = null
@@ -131,29 +132,66 @@ export const overviewRoute = reatomRoute({
       eventSource.close()
       eventSource = null
     }
-    isLive.setFalse()
+  }
+
+  function clearLiveAtoms() {
     liveKpis.set(null)
     liveTrend.set(null)
     liveCostTrend.set(null)
     liveInsights.set(null)
     liveTeams.set(null)
+  }
+
+  // --- Real-time live (from DB, polls every 5s) ---
+
+  const startLive = action(() => {
+    connectSSE("/api/overview/live")
+    isLive.setTrue()
+    isTurbo.setFalse()
+  }, "overview.startLive")
+
+  const stopLive = action(() => {
+    disconnectSSE()
+    isLive.setFalse()
+    clearLiveAtoms()
   }, "overview.stopLive")
 
-  const toggleLive = action(() => {
-    if (isLive()) stopLive()
-    else startLive()
-  }, "overview.toggleLive")
+  // --- Turbo mode (pregenerated, ~15 updates/sec, no DB) ---
 
-  // Auto-start live mode when entering overview, stop when leaving
+  const startTurbo = action(() => {
+    connectSSE("/api/turbo/live")
+    isTurbo.setTrue()
+    isLive.setFalse()
+  }, "overview.startTurbo")
+
+  const stopTurbo = action(() => {
+    disconnectSSE()
+    isTurbo.setFalse()
+    // Reconnect to real live data
+    startLive()
+  }, "overview.stopTurbo")
+
+  const toggleTurbo = action(() => {
+    if (isTurbo()) stopTurbo()
+    else startTurbo()
+  }, "overview.toggleTurbo")
+
+  // Auto-start real live when entering overview, stop everything when leaving
   route.match.extend(
     withChangeHook(isMatch => {
-      if (isMatch && !isLive()) startLive()
-      if (!isMatch && isLive()) stopLive()
+      if (isMatch && !isLive() && !isTurbo()) startLive()
+      if (!isMatch) {
+        disconnectSSE()
+        isLive.setFalse()
+        isTurbo.setFalse()
+        clearLiveAtoms()
+      }
     }),
   )
 
   return {
     isLive,
+    isTurbo,
     totalSessions,
     totalCost,
     completionRate,
@@ -167,6 +205,8 @@ export const overviewRoute = reatomRoute({
     teams,
     startLive,
     stopLive,
-    toggleLive,
+    startTurbo,
+    stopTurbo,
+    toggleTurbo,
   }
 })

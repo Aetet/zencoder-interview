@@ -9,6 +9,7 @@ import { quality } from './routes/quality.js'
 import { alerts } from './routes/alerts.js'
 import { budgets } from './routes/budgets.js'
 import { live } from './routes/live.js'
+import { turbo } from './routes/turbo.js'
 
 const app = new Hono()
 
@@ -24,6 +25,7 @@ const api = app
   .route('/api/alerts', alerts)
   .route('/api/budgets', budgets)
   .route('/api/overview', live)
+  .route('/api/turbo', turbo)
 
 export type AppType = typeof api
 export default app

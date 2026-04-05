@@ -61,6 +61,7 @@ function makeRows(sql: string, params: unknown[]): unknown[] {
   }
 
   // --- Count queries ---
+  if (has(q, 'count(distinct user_id)', 'team_user_stats')) return [{ cnt: 2100 }]
   if (has(q, 'count', 'from teams')) return [{ cnt: TEAMS.length }]
   if (has(q, 'count', 'from users')) return [{ cnt: USERS.length }]
 

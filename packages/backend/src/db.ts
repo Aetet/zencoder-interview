@@ -11,8 +11,10 @@ let _pool: pg.Pool = new pg.Pool({
   connectionTimeoutMillis: 10_000,
 })
 
-export const pool: Pick<pg.Pool, 'query'> = {
-  query: (...args: Parameters<pg.Pool['query']>) => _pool.query(...args),
+export const pool = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  query: (text: string, params?: unknown[]): Promise<pg.QueryResult<any>> =>
+    _pool.query(text, params as never[]),
 }
 
 /** Replace the pool (used by tests to inject a mock). */

@@ -4,18 +4,14 @@ import { Skeleton } from "../../shared/components/Skeleton"
 import { KpiCards } from "./components/KpiCards"
 import { InsightsPanel } from "./components/InsightsPanel"
 import { TeamLeaderboard } from "./components/TeamLeaderboard"
-import { GoLiveButton } from "./components/GoLiveButton"
+import { TurboModeButton } from "./components/TurboModeButton"
 import { CostChart } from "./components/CostChart"
 import { SessionsChart } from "./components/SessionsChart"
 
 export const OverviewPage = reatomComponent(() => {
   const ready = overviewRoute.loader.ready()
   const live = overviewRoute.isLive()
-
-  performance.mark("overview-render")
-  console.log("[OverviewPage] render at", performance.now().toFixed(1) + "ms", "| ready:", ready, "| live:", live)
-
-  // return <div>hok</div>
+  const turbo = overviewRoute.isTurbo()
 
   if (!ready) {
     return (
@@ -38,9 +34,10 @@ export const OverviewPage = reatomComponent(() => {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-medium text-foreground-secondary">
           Overview
-          {live && <span className="ml-3 text-xs text-error font-normal animate-pulse">LIVE</span>}
+          {live && <span className="ml-3 text-xs text-success font-normal animate-pulse">LIVE</span>}
+          {turbo && <span className="ml-3 text-xs text-warning font-normal animate-pulse">TURBO</span>}
         </h1>
-        <GoLiveButton />
+        <TurboModeButton />
       </div>
 
       <KpiCards />

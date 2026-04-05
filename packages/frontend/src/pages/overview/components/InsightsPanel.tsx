@@ -12,12 +12,14 @@ const borderColors: Record<string, string> = {
 export const InsightsPanel = reatomComponent(() => {
   const insights = overviewRoute.insightsList()
   const live = overviewRoute.isLive()
+  const turbo = overviewRoute.isTurbo()
+  const active = live || turbo
 
   return (
     <Card>
       <h3 className="text-sm font-medium text-foreground-secondary mb-4">
         Insights
-        {live && <span className="ml-2 inline-block w-1.5 h-1.5 rounded-full bg-error animate-pulse" />}
+        {active && <span className={cn("ml-2 inline-block w-1.5 h-1.5 rounded-full animate-pulse", turbo ? "bg-warning" : "bg-success")} />}
       </h3>
       <div className="space-y-3">
         {insights.map((insight, i) => (
