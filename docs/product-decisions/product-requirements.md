@@ -498,3 +498,57 @@ Decisions on each founder comment from the 2026-04-03 review.
 
 ### Comment 18: "Spec doesn't address how team/user/repo attribution works."
 **ACCEPT.** Added Section 4.0.8 (Enrichment Pipeline) defining the prerequisite work: the ingestion service must attach `team_id`, `user_id`, `repository`, and `model_id` to each session at write time. Sources for each field are specified. This is called out as a hard dependency for FR-2 and FR-5. "Enrichment pipeline implementation" is added as an open question.
+
+---
+
+## Stage 1 Additions (2026-04-05)
+
+### FR-10: Real Data Pipeline
+
+**Status:** Implemented
+
+The dashboard now connects to real databases instead of in-memory mock data.
+
+| Component | Implementation |
+|---|---|
+| **Event ingestion** | Rust simulator generates streaming-level agent events (SessionStart, TextDelta, ToolUse, ToolResult, Usage, MessageStop, SessionEnd) matching the Claw Code reference agent format |
+| **Raw storage** | TimescaleDB hypertable — one row per streaming event, partitioned by timestamp |
+| **Message queue** | Kafka (optional) — decouples simulator from transformer, enables replay |
+| **Transformation** | Rust transformer aggregates events into per-endpoint PostgreSQL tables |
+| **Dashboard storage** | PostgreSQL — pre-aggregated baked tables, one per API endpoint |
+| **API** | TypeScript backend reads PostgreSQL directly with type-safe queries (pg + zapatos) |
+
+### FR-11: Live Dashboard via SSE
+
+**Status:** Implemented
+
+| Feature | Implementation |
+|---|---|
+| **Real-time overview** | SSE polls PostgreSQL every 5s, pushes KPIs/trends to frontend |
+| **Budget SSE** | Separate SSE channel for budget state — broadcasts on every save |
+| **Turbo mode** | 15 updates/sec with no DB — for UI stress testing |
+| **Auto-connect** | Overview connects to live SSE on page load, disconnects on navigation |
+
+### FR-12: Server-Side Budget Management
+
+**Status:** Implemented
+
+Budget logic moved from client to server:
+
+| Feature | Implementation |
+|---|---|
+| **Auto-expansion** | When a team override exceeds its current allocation, org budget expands by the delta |
+| **Validation** | Rejects saving org budget below override sum (hard error, not warning) |
+| **Per-team endpoint** | `POST /api/budgets/team` — send `{ teamId, budget }`, server merges and expands |
+| **SSE broadcast** | Every budget save broadcasts updated state to all connected clients |
+| **Auto-distribution** | Remaining budget / non-overridden teams. $0 when budget fully consumed by overrides |
+
+### NFR-6: Developer Experience
+
+| Feature | Implementation |
+|---|---|
+| **Devbox** | Reproducible environment: Node 20, pnpm 9, Rust, cmake, librdkafka |
+| **Two terminals** | `cargo run -- poll` + `pnpm dev` to run the full stack |
+| **Poll mode** | Seeds 3 days + generates ~900 sessions every 30s, writes directly to both DBs (no Kafka needed) |
+| **Observation tools** | `status`, `verify`, `kafka-monitor` subcommands for inspecting pipeline state |
+| **Documentation** | ENTRY_POINT.md navigation guide, TECH_SETUP.md operational reference |

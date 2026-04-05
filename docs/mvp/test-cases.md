@@ -526,3 +526,144 @@ All tests use the shared fixture set from [MVP Scope Section 5.2](./mvp-scope.md
 | `pricing.json` | Haiku/Sonnet/Opus rates | Cost computation tests |
 
 Backend serves fixtures as mock data. Frontend unit tests import fixtures directly for assertions.
+
+---
+
+## Stage 1: Data Pipeline Tests (added 2026-04-06)
+
+### Rust Simulator Tests (54 tests)
+
+#### Aggregation Tests (23 tests)
+
+| # | Test | Assert |
+|---|---|---|
+| A.1 | Completed session sums tokens across iterations | input=800, output=250, cache_creation=3000, cache_read=300 |
+| A.2 | Errored session with no iterations has zero tokens | All token fields = 0 |
+| A.3 | Cancelled session sums tokens from partial iterations | Partial totals correct |
+| A.4 | Completed sonnet session cost matches pricing formula | cost = 0.017490 (exact decimal) |
+| A.5 | Opus is more expensive than haiku with same tokens | opus.cost > haiku.cost |
+| A.6 | Errored session with no tokens has zero cost | cost = 0 |
+| A.7 | Completed session counts tool calls | tool_calls = 2 |
+| A.8 | Session with tool errors counts failures separately | tool_calls = 3, tool_errors = 2 |
+| A.9 | Errored session counts its tool calls | tool_calls = 1, tool_errors = 1 |
+| A.10 | Session without tools has zero counts | tool_calls = 0, tool_errors = 0 |
+| A.11 | Cancelled session has zero tool counts | tool_calls = 0 |
+| A.12 | Completed session counts iterations from MessageStop | iterations = 2 |
+| A.13 | Errored session with no iterations has zero | iterations = 0 |
+| A.14 | Completed session has correct status | status = "completed", no error_category |
+| A.15 | Errored tool session has tool error category | error_category = "tool" |
+| A.16 | Errored api session has api error category | error_category = "api" |
+| A.17 | Cancelled session has no error category | error_category = None |
+| A.18 | Session with tool errors still completes | status = "completed", tool_errors = 2 |
+| A.19 | Completed session extracts user and team | user_id, team_id, model correct |
+| A.20 | Opus session extracts correct model | model = "opus" |
+| A.21 | Date comes from SessionStart timestamp | date = "2026-04-04" |
+| A.22 | Missing SessionStart returns error | Error message contains "SessionStart" |
+| A.23 | Missing SessionEnd returns error | Error message contains "SessionEnd" |
+
+#### Generator Tests (22 tests)
+
+| # | Test | Assert |
+|---|---|---|
+| G.1 | Generates requested number of teams | teams.len() = 100 |
+| G.2 | Generates 1000 teams without duplicates | All IDs unique, all names unique |
+| G.3 | Team ID is lowercase hyphenated name | id matches name transformation |
+| G.4 | First teams use prefixes directly | Backend, Frontend, Platform |
+| G.5 | Generates 2-5 users per team | Each team has 2-5 users |
+| G.6 | Every user belongs to existing team | All team_ids valid |
+| G.7 | User IDs are sequential | user-1, user-2, ... |
+| G.8 | User emails follow pattern | ends with @acme.com, contains dot |
+| G.9 | Session starts with SessionStart, ends with SessionEnd | First and last events correct |
+| G.10 | Session events have monotonically increasing seq | 0, 1, 2, ... |
+| G.11 | Session events have monotonically increasing timestamps | ts[n+1] >= ts[n] |
+| G.12 | All events share same session_id | Consistent across session |
+| G.13 | Session IDs unique across sessions | No duplicates in 50 sessions |
+| G.14 | Every ToolUse has a matching ToolResult | IDs match 1:1 |
+| G.15 | Usage events equal MessageStop events | Same count |
+| G.16 | ToolResults come after MessageStop | seq ordering correct |
+| G.17 | First iteration has cacheCreation and no cacheRead | cache pattern correct |
+| G.18 | Subsequent iterations have zero cacheCreation | Only first iteration creates cache |
+| G.19 | SessionStart has required fields | userId, teamId, model, permissionLevel |
+| G.20 | SessionEnd has required fields | status, durationMs; errorCode if errored |
+| G.21 | ToolUse payloads have valid tool names | All 12 known tools |
+| G.22 | Generates approximately requested sessions per day | 280-320 for target 300 |
+
+#### Pricing Tests (9 tests)
+
+| # | Test | Assert |
+|---|---|---|
+| P.1 | Haiku pricing matches TypeScript | input=0.25, output=1.25, cache_create=0.30, cache_read=0.03 |
+| P.2 | Sonnet pricing matches TypeScript | input=3.00, output=15.00, cache_create=3.75, cache_read=0.30 |
+| P.3 | Opus pricing matches TypeScript | input=15.00, output=75.00, cache_create=18.75, cache_read=1.50 |
+| P.4 | Unknown model defaults to sonnet | Fallback pricing |
+| P.5 | Cost formula haiku | Exact decimal calculation |
+| P.6 | Cost formula sonnet | Exact decimal calculation |
+| P.7 | Cost formula opus | Exact decimal calculation |
+| P.8 | Zero tokens zero cost | cost = 0 |
+| P.9 | Opus is 60x more expensive than haiku for input | Ratio = 60 |
+
+### Backend Budget Logic Tests (15 tests)
+
+| # | Test | Assert |
+|---|---|---|
+| BL.1 | Expands when override exceeds auto-distributed allocation | Budget increases by delta |
+| BL.2 | Expands when existing override is increased | Budget increases by difference |
+| BL.3 | Does not shrink when override is decreased | Budget unchanged |
+| BL.4 | Does not change when override equals current allocation | Budget unchanged |
+| BL.5 | Keeps org budget when override is removed | Budget stays same |
+| BL.6 | Respects explicit budget change without expansion | Uses incoming budget |
+| BL.7 | Respects explicit budget decrease | Uses incoming budget |
+| BL.8 | Expands for each increased override | Sum of all positive deltas |
+| BL.9 | Only expands for increased overrides, not decreased | Selective expansion |
+| BL.10 | Handles zero teams | Auto-budget = 0, delta = full value |
+| BL.11 | Handles all teams overridden — expands budget | Correct expansion |
+| BL.12 | Rejects when explicit budget is below override sum | BudgetValidationError |
+| BL.13 | Expands when overrides exceed current budget (auto-expansion) | Budget covers overrides |
+| BL.14 | Allows when budget equals override sum exactly | No error |
+| BL.15 | Allows when no overrides | Any budget accepted |
+
+### Backend Mock Pool Tests (79 tests → updated from 84)
+
+Uses mock PG pool (`setup.ts`) — no real database needed. All API endpoints tested with deterministic data.
+
+### Test Data (updated)
+
+| Fixture | Content | Used by |
+|---|---|---|
+| `tests/fixtures.rs` | 7 deterministic sessions (completed, errored-tool, errored-api, cancelled, tool-errors, opus, haiku) | Rust aggregation tests |
+| `setup.ts` | Mock PG pool with SQL pattern matching | Backend API tests |
+| `budget-logic.test.ts` | Pure function tests for budget expansion | Budget validation |
+
+### Frontend Unit Tests (139 tests, 7 files)
+
+| File | Tests | Coverage |
+|---|---|---|
+| `budget-distribution.test.ts` | 31 | Auto-distribution, overrides, shrinking, validation, edge cases |
+| `components.test.ts` | 45 | KPI cards, charts, modals, sidebar, skeleton, toast |
+| `state-extended.test.ts` | 22 | Reatom atoms, computed values, route state |
+| `async-and-sse.test.ts` | 15 | EventSource lifecycle, SSE data parsing, live toggle |
+| `format.test.ts` | 13 | Currency, percent, number, time formatting |
+| `model.test.ts` | 9 | Route model computeds, filter atoms |
+| `filters.test.ts` | 4 | Time range, team, user, model filter atoms |
+
+### E2E Tests (39 tests, 7 files — Playwright)
+
+| File | Tests | Coverage |
+|---|---|---|
+| `overview.test.ts` | 6 | KPI cards load, charts render, insights panel, team leaderboard |
+| `live.test.ts` | 5 | Auto-live on load, turbo button, turbo toggle, stop turbo, KPIs in live |
+| `costs.test.ts` | 5 | Cost summary, token breakdown, cache efficiency, budget tracker, top files |
+| `teams.test.ts` | 8 | Grid loads, tabs visible, team detail navigation, KPIs, members table, budget inline |
+| `filters.test.ts` | 5 | Filter bar, team selector, range selector, filter persistence |
+| `navigation.test.ts` | 5 | Sidebar navigation, back/forward, unknown URL redirect, initial load perf |
+| `settings.test.ts` | 5 | Alert thresholds, delivery toggles, alert history, anomaly detection |
+
+### Total Test Count (Stage 1)
+
+| Layer | Count |
+|---|---|
+| Rust simulator (unit) | 54 |
+| Backend API (unit, mock pool) | 94 |
+| Frontend (unit) | 139 |
+| E2E (Playwright) | 39 |
+| **Total** | **326** |

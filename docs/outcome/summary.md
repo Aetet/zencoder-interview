@@ -129,9 +129,29 @@ Agent analytics dashboard for engineering leaders to monitor AI coding assistant
 ### 5. Server-Side Budget Storage
 
 **Before:** localStorage on client, synced to API on save.
-**After:** `POST /api/budgets` is the single source of truth. Teams route loader fetches budget config alongside team data.
+**After:** `POST /api/budgets` is the single source of truth. Budget state broadcast via SSE on every change.
 
 **Why:** Prevents stale state across tabs, makes alerts API self-contained (reads budget from store, not client).
+
+### 6. `createLiveMode<T>()` Factory (Stage 1)
+
+Reusable factory for SSE connections: `{ url, name }` → `{ data, isLive, start, stop }`. Used by overview (real + turbo) and teams (budget). Auto-connects via `withChangeHook` on route match.
+
+### 7. Server-Side Budget Expansion (Stage 1)
+
+Budget logic moved to pure `computeUpdatedBudget()` on the server. When a team override increases, the org budget auto-expands. Validation rejects budget below override sum. Single `POST /api/budgets/team` endpoint — frontend sends `{ teamId, budget }`, server reads current config, merges, expands, saves, broadcasts.
+
+### 8. Route Decoupling (Stage 1)
+
+Teams monolith (`teams-route.tsx`, 250 lines) split into 8 files across 5 folders:
+- `teams-route.tsx` — layout, teamsList, budget SSE hook
+- `all-teams/` — grid page, budget view
+- `team/` — detail page with own budget fetch
+- `edit-budget/` — org budget modal (`/teams?edit`)
+- `edit-team-budget/` — team budget modal (`/teams/:id?edit=true`)
+- `edit-grid-team-budget/` — team budget from grid (`/teams?editTeam=:id`)
+
+Each route owns its data. No shared mutable budget atom — server is the source of truth, SSE keeps clients in sync.
 
 ---
 
@@ -139,13 +159,15 @@ Agent analytics dashboard for engineering leaders to monitor AI coding assistant
 
 | Metric | Value |
 |---|---|
-| TypeScript source lines | ~6,100 |
+| TypeScript source lines | ~8,600 |
 | Rust source lines | ~1,800 |
-| React components | 39 |
-| TS tests (backend) | 79 |
+| React components | 42 |
+| TS tests (backend) | 94 |
+| TS tests (frontend) | 139 |
 | Rust tests | 54 |
+| E2E tests (Playwright) | 39 |
+| **Total tests** | **326** |
 | SQL migrations | 10 |
-| E2E tests | 45 |
 | Lint warnings | 0 |
 | Type errors | 0 |
 | Teams rendered | 1000 at 60fps |
