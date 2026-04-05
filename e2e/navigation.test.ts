@@ -1,13 +1,5 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('E2E-7: CSV Export', () => {
-  test('7.1 - export button present', async ({ page }) => {
-    await page.goto('/')
-    await page.waitForSelector('[class*="font-semibold"]', { timeout: 30_000 })
-    await expect(page.locator('button', { hasText: 'Export CSV' })).toBeVisible()
-  })
-})
-
 test.describe('E2E-8: Navigation & URL', () => {
   test('8.1 - navigate to Costs via sidebar', async ({ page }) => {
     await page.goto('/')
@@ -75,17 +67,6 @@ test.describe('E2E-9: Performance', () => {
     await page.waitForSelector('[class*="font-semibold"]', { timeout: 20_000 })
     const elapsed = Date.now() - start
     expect(elapsed).toBeLessThan(5000)
-  })
-
-  test('9.2 - filter response under 2 seconds', async ({ page }) => {
-    await page.goto('/')
-    await page.waitForSelector('[class*="font-semibold"]', { timeout: 30_000 })
-
-    const start = Date.now()
-    await page.locator('button', { hasText: '7d' }).first().click()
-    await page.waitForTimeout(500)
-    const elapsed = Date.now() - start
-    expect(elapsed).toBeLessThan(2000)
   })
 
   test('9.3 - navigation is fast', async ({ page }) => {

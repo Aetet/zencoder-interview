@@ -4,7 +4,8 @@
     "jsx": "react-jsx",
     "noEmit": true,
     "paths": {
-      "@zendash/shared": ["../shared/src/types.ts"]
+      "@zendash/shared": ["../shared/src/types.ts"],
+      "@zendash/shared/schemas": ["../shared/src/schemas.ts"]
     }
   },
   "include": ["src"]

@@ -26,12 +26,18 @@ importers:
       '@hono/node-server':
         specifier: ^1.14.0
         version: 1.19.12(hono@4.12.10)
+      '@hono/zod-validator':
+        specifier: ^0.7.6
+        version: 0.7.6(hono@4.12.10)(zod@4.3.6)
       '@zendash/shared':
         specifier: workspace:*
         version: link:../shared
       hono:
         specifier: ^4.7.0
         version: 4.12.10
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
     devDependencies:
       tsx:
         specifier: ^4.19.0
@@ -63,6 +69,9 @@ importers:
       '@zendash/shared':
         specifier: workspace:*
         version: link:../shared
+      backend:
+        specifier: workspace:^
+        version: link:../backend
       hono:
         specifier: ^4.7.0
         version: 4.12.10
@@ -79,6 +88,9 @@ importers:
         specifier: ^4.3.6
         version: 4.3.6
     devDependencies:
+      '@hono/zod-validator':
+        specifier: ^0.7.6
+        version: 0.7.6(hono@4.12.10)(zod@4.3.6)
       '@tailwindcss/vite':
         specifier: ^4.1.0
         version: 4.2.2(vite@6.4.1(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0))
@@ -107,7 +119,11 @@ importers:
         specifier: ^3.1.0
         version: 3.2.4(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)
 
-  packages/shared: {}
+  packages/shared:
+    dependencies:
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
 
 packages:
 
@@ -515,6 +531,12 @@ packages:
     engines: {node: '>=18.14.1'}
     peerDependencies:
       hono: ^4
+
+  '@hono/zod-validator@0.7.6':
+    resolution: {integrity: sha512-Io1B6d011Gj1KknV4rXYz4le5+5EubcWEU/speUjuw9XMMIaP3n78yXLhjd2A3PXaXaUwEAluOiAyLqhBEJgsw==}
+    peerDependencies:
+      hono: '>=3.9.0'
+      zod: ^3.25.0 || ^4.0.0
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -1882,6 +1904,11 @@ snapshots:
   '@hono/node-server@1.19.12(hono@4.12.10)':
     dependencies:
       hono: 4.12.10
+
+  '@hono/zod-validator@0.7.6(hono@4.12.10)(zod@4.3.6)':
+    dependencies:
+      hono: 4.12.10
+      zod: 4.3.6
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:

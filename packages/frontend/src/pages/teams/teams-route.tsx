@@ -1,6 +1,5 @@
 import { atom, action, computed, reatomRoute, wrap } from "@reatom/core"
 import { api } from "../../shared/api/client"
-import { filterParams } from "../../shared/filters/model"
 import { settingsRoute } from "../settings/settings-route"
 import { getTeamBudgetDelta, validateOrgBudget } from "../../shared/utils/budget"
 import { showToast } from "../../shared/components/Toast"
@@ -15,11 +14,7 @@ import type { Team, TeamUser } from "@zendash/shared"
 export const teamsRoute = reatomRoute({
   path: "teams",
   async loader() {
-    const params = filterParams()
-    const [teams, budgetConfig] = await Promise.all([
-      wrap(api.teams.list(params)),
-      wrap(api.budgets.get()),
-    ])
+    const [teams, budgetConfig] = await Promise.all([wrap(api.teams.list({})), wrap(api.budgets.get())])
     // Init budget state from server
     settingsRoute.budgetInput.set(String(budgetConfig.monthlyBudget))
     settingsRoute.teamBudgetOverrides.set(budgetConfig.teamOverrides ?? {})
@@ -43,7 +38,12 @@ export const teamsRoute = reatomRoute({
                 <AllTeamsContent />
               </DeferredMount>
             </div>
-            {!isExact && self.outlet().map((child, i) => <div key={i} className="flex flex-col gap-4">{child}</div>)}
+            {!isExact &&
+              self.outlet().map((child, i) => (
+                <div key={i} className="flex flex-col gap-4">
+                  {child}
+                </div>
+              ))}
           </>
         )}
       </div>
@@ -52,10 +52,6 @@ export const teamsRoute = reatomRoute({
 }).extend(route => {
   const teamsList = computed(() => {
     const teams = route.loader.data() ?? ([] as Team[])
-    // Keep settings route aware of team IDs for budget computation
-    if (teams.length > 0) {
-      settingsRoute.knownTeamIds.set(teams.map(t => t.id))
-    }
     return teams
   }, "teams.list")
 
@@ -93,7 +89,7 @@ export const editBudgetRoute = teamsRoute
     const save = action(async () => {
       const v = validation()
       if (v && !v.valid) {
-        showToast(v.error!, 'error')
+        showToast(v.error!, "error")
         return
       }
       settingsRoute.budgetInput.set(editingValue())
@@ -154,8 +150,7 @@ export const teamRoute = teamsRoute
   .reatomRoute({
     path: ":teamId",
     async loader({ teamId }) {
-      const params = filterParams()
-      return await wrap(api.teams.users(teamId, params))
+      return await wrap(api.teams.users(teamId, {}))
     },
     render() {
       return <TeamPage />
@@ -177,7 +172,7 @@ export const teamRoute = teamsRoute
 export const editTeamRoute = teamRoute
   .reatomRoute({
     params({ edit, teamId }: { edit?: string; teamId?: string }) {
-      return edit === 'true' ? { edit, teamId: teamId ?? '' } : null
+      return edit === "true" ? { edit, teamId: teamId ?? "" } : null
     },
   })
   .extend(edit => {

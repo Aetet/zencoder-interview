@@ -108,15 +108,15 @@ Sortable table: Team | Sessions | Cost | Completion Rate | Cost/Session. Default
 **Top Files Tables (bottom row):**
 Two side-by-side tables:
 
-| Top 10 Most-Read Files | Reads | Sessions | Token Cost |
-|---|---|---|---|
-| `src/services/payment.ts` | 342 | 89 | $8.21 |
-| ... | | | |
+| Top 10 Most-Read Files | Reads | Sessions |
+|---|---|---|
+| `src/services/payment.ts` | 342 | 89 |
+| ... | | |
 
-| Top 10 Most-Edited Files | Edits | Sessions | Churn (edits/session) |
-|---|---|---|---|
-| `src/api/routes.ts` | 156 | 67 | 2.3 |
-| ... | | | |
+| Top 10 Most-Edited Files | Edits | Sessions |
+|---|---|---|
+| `src/api/routes.ts` | 156 | 67 |
+| ... | | |
 
 ---
 
@@ -134,18 +134,19 @@ Two side-by-side tables:
 - Header: "All Teams" + coins icon (opens org budget modal)
 - Virtualized grid (1000+ teams, `@tanstack/react-virtual`):
 
-| Team | Sessions | Completion | Spent / Budget | Cost/Sess | Cache | Budget |
-|---|---|---|---|---|---|---|
-| Backend | 95 | 89.5% | $0.49 / $1.00 | $0.01 | 25.4% | $1.00 |
+| Team | Sessions | Completion | Spent / Budget | Cost/Sess | Cache |
+|---|---|---|---|---|---|
+| Backend | 95 | 89.5% | $0.49 / $1.00 | $0.01 | 25.4% |
 
-- Click row → navigates to `/teams/:teamId`
+- Click row → opens team budget edit modal (`?editTeam=:id`)
+- Click team name → navigates to `/teams/:teamId`
 - Numbers right-aligned for visual comparison
-- Budget column shows progress bar + amount
-- Team tabs: "All Teams" (active) + first 10 teams + "+N more" expand
+- Org budget shown inline in header (total spent / total budget + coins icon)
+- Team tabs: "All Teams" (active) + first 10 teams + collapsible expand
 
 **Single Team View (`/teams/:teamId`):**
-- Header: team name + coins icon (opens team budget edit modal)
-- 5 KPI cards: Budget (with progress bar, clickable), Sessions, Completion Rate, Cost/Session, Cache Hit Rate
+- Header: team name + budget inline (spent / budget + coins icon for edit)
+- 4 KPI cards: Sessions, Completion Rate, Cost/Session, Cache Hit Rate
 - User table:
 
 | User | Sessions | Cost | Completion Rate | Cost/Session | Last Active |
@@ -156,11 +157,13 @@ Two side-by-side tables:
 - Team tabs persist (shared layout via parent route)
 
 **Budget Edit Modal (`?edit`):**
-- Search-only route pattern — URL stays at current path, adds `?edit`
+- Two route variants:
+  - From all-teams grid: `?editTeam=:id` (search-only on `teamsRoute`)
+  - From team detail: `inputParams`-driven (search-only on `teamRoute`, closed via `inputParams.set(null)`)
 - Input: monthly budget (USD)
 - Shows delta info (increase/decrease warning)
-- Save persists to localStorage + API
-- Close removes `?edit` param
+- Save persists to server via `POST /api/budgets`
+- Close returns to previous view
 
 **Performance:** AllTeamsContent stays mounted (CSS `hidden`) when viewing team detail to avoid remount cost on back-navigation.
 

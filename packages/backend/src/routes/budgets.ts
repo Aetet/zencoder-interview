@@ -1,31 +1,22 @@
 import { Hono } from 'hono'
+import { zValidator } from '@hono/zod-validator'
+import { saveBudgetSchema } from '@zendash/shared/schemas'
 import { store } from '../mock/store.js'
 
 export const budgets = new Hono()
-
-// GET /api/budgets — current budget config
-budgets.get('/', (c) => {
-  return c.json({
-    monthlyBudget: store.budget.monthlyBudget,
-    teamOverrides: store.budget.teamOverrides,
+  .get('/', (c) => {
+    return c.json({
+      monthlyBudget: store.budget.monthlyBudget,
+      teamOverrides: store.budget.teamOverrides,
+    })
   })
-})
+  .post('/', zValidator('json', saveBudgetSchema), (c) => {
+    const body = c.req.valid('json')
 
-// POST /api/budgets — save budget config
-budgets.post('/', async (c) => {
-  const body = await c.req.json<{
-    monthlyBudget: number
-    teamOverrides?: Record<string, number>
-  }>()
+    store.budget.monthlyBudget = body.monthlyBudget
+    if (body.teamOverrides) {
+      store.budget.teamOverrides = body.teamOverrides
+    }
 
-  if (typeof body.monthlyBudget !== 'number' || body.monthlyBudget <= 0) {
-    return c.json({ error: 'monthlyBudget must be a positive number' }, 400)
-  }
-
-  store.budget.monthlyBudget = body.monthlyBudget
-  if (body.teamOverrides) {
-    store.budget.teamOverrides = body.teamOverrides
-  }
-
-  return c.json({ success: true })
-})
+    return c.json({ success: true })
+  })

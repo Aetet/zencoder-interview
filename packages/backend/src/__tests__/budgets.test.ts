@@ -38,7 +38,7 @@ describe('POST /api/budgets — validation', () => {
     const res = await postBudget({ monthlyBudget: -100 })
     expect(res.status).toBe(400)
     const body = await res.json()
-    expect(body.error).toContain('positive number')
+    expect(body.success).toBe(false)
   })
 
   it('rejects zero budget', async () => {

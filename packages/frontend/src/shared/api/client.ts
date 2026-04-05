@@ -1,64 +1,42 @@
-const BASE = '/api'
+import { hc } from "hono/client"
+import type { AppType } from "backend/app"
 
-function qs(params: Record<string, string>): string {
-  const filtered = Object.entries(params).filter(([, v]) => v !== '')
-  if (filtered.length === 0) return ''
-  return '?' + new URLSearchParams(filtered).toString()
-}
-
-async function handleResponse<T>(res: Response): Promise<T> {
-  if (!res.ok) {
-    let message = `API error: ${res.status}`
-    try {
-      const body = await res.json()
-      if (body.error) message = body.error
-    } catch { /* ignore parse errors */ }
-    throw new Error(message)
-  }
-  return res.json()
-}
-
-async function get<T>(path: string, params: Record<string, string> = {}): Promise<T> {
-  const res = await fetch(`${BASE}${path}${qs(params)}`)
-  return handleResponse(res)
-}
-
-async function post<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  return handleResponse(res)
-}
+const client = hc<AppType>("")
 
 export const api = {
   sessions: {
-    summary: (params: Record<string, string>) => get<import('@zendash/shared').SessionSummary>('/sessions/summary', params),
+    summary: (params: Record<string, string>) =>
+      client.api.sessions.summary.$get({ query: params }).then(r => r.json()),
   },
   costs: {
-    breakdown: (params: Record<string, string>) => get<import('@zendash/shared').CostBreakdown>('/costs/breakdown', params),
-    cache: (params: Record<string, string>) => get<import('@zendash/shared').CacheData>('/costs/cache', params),
-    budget: () => get<import('@zendash/shared').BudgetData>('/costs/budget'),
+    breakdown: (params: Record<string, string>) =>
+      client.api.costs.breakdown.$get({ query: params }).then(r => r.json()),
+    cache: (params: Record<string, string>) => client.api.costs.cache.$get({ query: params }).then(r => r.json()),
+    budget: () => client.api.costs.budget.$get().then(r => r.json()),
   },
   teams: {
-    list: (params: Record<string, string>) => get<import('@zendash/shared').Team[]>('/teams', params),
-    users: (teamId: string, params: Record<string, string>) => get<import('@zendash/shared').TeamUser[]>(`/teams/${teamId}/users`, params),
+    list: (params: Record<string, string>) => client.api.teams.$get({ query: params }).then(r => r.json()),
+    users: async (teamId: string, params: Record<string, string>) => {
+      const res = await client.api.teams[":id"].users.$get({ param: { id: teamId }, query: params })
+      if (!res.ok) throw new Error(`API error: ${res.status}`)
+      return res.json()
+    },
   },
   files: {
-    top: (params: Record<string, string>) => get<import('@zendash/shared').TopFilesData>('/files/top', params),
+    top: (params: Record<string, string>) => client.api.files.top.$get({ query: params }).then(r => r.json()),
   },
   insights: {
-    list: (params: Record<string, string>) => get<import('@zendash/shared').Insight[]>('/insights', params),
+    list: (params: Record<string, string>) => client.api.insights.$get({ query: params }).then(r => r.json()),
   },
   quality: {
-    tier1: (params: Record<string, string>) => get<import('@zendash/shared').QualityTier1>('/quality/tier1', params),
+    tier1: (params: Record<string, string>) => client.api.quality.tier1.$get({ query: params }).then(r => r.json()),
   },
   alerts: {
-    list: () => get<import('@zendash/shared').AlertEvent[]>('/alerts'),
+    list: () => client.api.alerts.$get().then(r => r.json()),
   },
   budgets: {
-    get: () => get<{ monthlyBudget: number; teamOverrides: Record<string, number> }>('/budgets'),
-    save: (config: { monthlyBudget: number; teamOverrides?: Record<string, number> }) => post<{ success: boolean }>('/budgets', config),
+    get: () => client.api.budgets.$get().then(r => r.json()),
+    save: (config: { monthlyBudget: number; teamOverrides?: Record<string, number> }) =>
+      client.api.budgets.$post({ json: config }).then(r => r.json()),
   },
 }

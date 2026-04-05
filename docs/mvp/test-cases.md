@@ -241,12 +241,12 @@
 | # | Test | Assert |
 |---|---|---|
 | 4.1 | All teams grid renders with virtualized rows | Visible rows present, total height matches team count × row height |
-| 4.2 | Grid headers present | TEAM, SESSIONS, COMPLETION, SPENT/BUDGET, COST/SESS, CACHE, BUDGET |
+| 4.2 | Grid headers present | TEAM, SESSIONS, COMPLETION, SPENT/BUDGET, COST/SESS, CACHE |
 | 4.3 | Team tabs render | "All Teams" button + team name buttons visible |
 | 4.4 | Clicking team tab navigates to detail | URL changes to `/teams/:teamId` |
-| 4.5 | Team detail shows 5 KPI cards | Budget, Sessions, Completion, Cost/Session, Cache Hit |
-| 4.6 | Budget KPI card shows spent/budget with progress bar | `$0.49 / $1.00` format with colored bar |
-| 4.7 | Clicking budget card opens edit modal | Modal with budget input visible |
+| 4.5 | Team detail shows 4 KPI cards | Sessions, Completion, Cost/Session, Cache Hit |
+| 4.6 | Budget inline shows spent/budget in header | `$0.49 / $1.00` format next to team name |
+| 4.7 | Clicking coins icon opens edit modal | Modal with budget input visible |
 | 4.8 | Edit modal URL is `/teams/:teamId?edit` | Search param check |
 | 4.9 | User table renders team members | Table with user rows, emails visible |
 | 4.10 | Coins icon opens org budget modal on all-teams page | Modal with budget input at `/teams?edit` |
