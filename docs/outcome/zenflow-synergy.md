@@ -53,15 +53,15 @@ ZenDash tracks session success rate, error categories, tool error rate. This dat
 
 ## What's Missing for Full Integration
 
-| Gap | Effort | Priority |
-|---|---|---|
-| Real event ingestion (replace mock) | 2 weeks | P0 |
-| Authentication (org/team scoping) | 1 week | P0 |
-| Database (PostgreSQL for persistence) | 1 week | P0 |
-| ZenFlow event schema alignment | 3 days | P0 |
-| Webhook for budget alerts → ZenFlow | 3 days | P1 |
-| Real-time SSE from production data | 1 week | P1 |
-| Per-session drill-down (link to ZenFlow task) | 1 week | P2 |
+| Gap | Effort | Priority | Status |
+|---|---|---|---|
+| ~~Real event ingestion (replace mock)~~ | ~~2 weeks~~ | ~~P0~~ | **Done** — Rust simulator + Kafka pipeline |
+| Authentication (org/team scoping) | 1 week | P0 | Open |
+| ~~Database (PostgreSQL for persistence)~~ | ~~1 week~~ | ~~P0~~ | **Done** — TimescaleDB + PostgreSQL |
+| ~~ZenFlow event schema alignment~~ | ~~3 days~~ | ~~P0~~ | **Done** — streaming events match reference agent format |
+| Webhook for budget alerts → ZenFlow | 3 days | P1 | Open |
+| ~~Real-time SSE from production data~~ | ~~1 week~~ | ~~P1~~ | **Done** — SSE polls PostgreSQL every 5s |
+| Per-session drill-down (link to ZenFlow task) | 1 week | P2 | Open |
 
 ---
 

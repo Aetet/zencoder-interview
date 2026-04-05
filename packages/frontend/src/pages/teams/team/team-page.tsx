@@ -1,13 +1,14 @@
 import { reatomComponent } from '@reatom/react'
-import { teamsRoute, teamRoute, editTeamRoute } from './teams-route'
-import { settingsRoute } from '../settings/settings-route'
-import { KpiCard } from '../../shared/components/KpiCard'
-import { Card } from '../../shared/components/Card'
-import { Skeleton } from '../../shared/components/Skeleton'
-import { formatCurrency, formatPercent, formatCurrencyPrecise, formatTimeAgo } from '../../shared/utils/format'
-import { cn } from '../../shared/utils/cn'
-import { ModelUsageChart } from './components/ModelUsageChart'
-import { CoinsIcon } from '../../shared/components/icons/CoinsIcon'
+import { teamsRoute } from '../teams-route'
+import { teamRoute } from './team-route'
+import { editTeamBudgetRoute } from '../edit-team-budget/edit-team-budget-route'
+import { KpiCard } from '../../../shared/components/KpiCard'
+import { Card } from '../../../shared/components/Card'
+import { Skeleton } from '../../../shared/components/Skeleton'
+import { formatCurrency, formatPercent, formatCurrencyPrecise, formatTimeAgo } from '../../../shared/utils/format'
+import { cn } from '../../../shared/utils/cn'
+import { ModelUsageChart } from './ModelUsageChart'
+import { CoinsIcon } from '../../../shared/components/icons/CoinsIcon'
 
 const MEMBER_COLS = '1fr 100px 80px 100px 100px 100px'
 const CELL = 'py-2 px-3 text-[13px] text-foreground tabular-nums truncate text-right'
@@ -75,17 +76,16 @@ export const TeamPage = reatomComponent(() => {
 }, 'TeamPage')
 
 const TeamBudgetInline = reatomComponent(({ teamId, cost }: { teamId: string; cost: number }) => {
-  const budgets = settingsRoute.computedTeamBudgets()
-  const budget = budgets[teamId] ?? 0
+  const allocated = teamRoute.teamBudgetAllocation()
 
   return (
     <div className="flex items-center gap-2">
       <span className="text-sm tabular-nums text-foreground">
         {formatCurrencyPrecise(cost)}
-        <span className="text-foreground-muted"> / {formatCurrency(budget)}</span>
+        <span className="text-foreground-muted"> / {formatCurrency(allocated)}</span>
       </span>
       <button
-        onClick={() => editTeamRoute.open()}
+        onClick={() => editTeamBudgetRoute.open(teamId)}
         className="text-foreground-muted hover:text-accent-foreground transition-colors cursor-pointer"
         title="Edit budget"
       >

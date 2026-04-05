@@ -10,10 +10,9 @@ const borderColors: Record<string, string> = {
 }
 
 export const InsightsPanel = reatomComponent(() => {
-  const insights = overviewRoute.insightsList()
-  const live = overviewRoute.isLive()
+  const { insights } = overviewRoute.view()
   const turbo = overviewRoute.isTurbo()
-  const active = live || turbo
+  const active = overviewRoute.isLive() || turbo
 
   return (
     <Card>
@@ -30,7 +29,7 @@ export const InsightsPanel = reatomComponent(() => {
               borderColors[insight.type] ?? 'border-l-accent',
             )}
           >
-            <div className={cn('text-[13px] text-foreground font-medium', live && 'live-value')}>
+            <div className={cn('text-[13px] text-foreground font-medium', active && 'live-value')}>
               {insight.title}
             </div>
             <div className="text-[11px] text-foreground-muted mt-0.5">{insight.description}</div>

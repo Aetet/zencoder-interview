@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { pool, num } from '../db.js'
+import { pool } from '../db.js'
 import type { AlertEvent } from '@zendash/shared'
 
 export const alerts = new Hono()

@@ -160,9 +160,9 @@ describe('BD-9: Team budget exceeded', () => {
 
 describe('BD-9: Spend spikes', () => {
   it('9.8 - spike when daily > 2× weekly avg', () => {
-    // 7 days of $4/day average, today $10
+    // 7 days of $4/day average (days 2-8 ago), today $10
     const sessions = [
-      ...Array.from({ length: 7 }, (_, i) => makeSession('alpha', 4, i + 1)),
+      ...Array.from({ length: 7 }, (_, i) => makeSession('alpha', 4, i + 2)),
       makeSession('alpha', 10, 0), // today
     ]
     const input = makeInput({
@@ -178,7 +178,7 @@ describe('BD-9: Spend spikes', () => {
 
   it('9.9 - no spike when daily within normal range', () => {
     const sessions = [
-      ...Array.from({ length: 7 }, (_, i) => makeSession('alpha', 4, i + 1)),
+      ...Array.from({ length: 7 }, (_, i) => makeSession('alpha', 4, i + 2)),
       makeSession('alpha', 5, 0), // today — 5 vs avg 4 = 1.25x, below 2x
     ]
     const input = makeInput({

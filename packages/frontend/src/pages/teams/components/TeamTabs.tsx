@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { reatomComponent } from '@reatom/react'
-import { teamsRoute, teamRoute } from '../teams-route'
+import { teamsRoute } from '../teams-route'
+import { teamRoute } from '../team/team-route'
 import { cn } from '../../../shared/utils/cn'
 
 const VISIBLE_TABS = 10

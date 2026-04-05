@@ -12,7 +12,7 @@ export function distributeBudget(
   const overrideSum = Object.values(overrides).reduce((s, v) => s + v, 0)
   const autoTeams = teamIds.filter((id) => !(id in overrides))
   const remaining = totalBudget - overrideSum
-  const autoBudget = autoTeams.length > 0 ? Math.max(1, remaining / autoTeams.length) : 0
+  const autoBudget = autoTeams.length > 0 && remaining > 0 ? remaining / autoTeams.length : 0
 
   for (const id of teamIds) {
     result[id] = id in overrides ? overrides[id] : Math.round(autoBudget * 100) / 100
@@ -54,15 +54,13 @@ export function validateOrgBudget(
   }
 
   const overrideSum = Object.values(overrides).reduce((s, v) => s + v, 0)
-  if (newBudget < overrideSum) {
-    const shrunk = shrinkOverrides(overrides, newBudget)
+  if (overrideSum > 0 && newBudget < overrideSum) {
     const sorted = Object.entries(overrides).sort((a, b) => b[1] - a[1])
-    const top6 = sorted.slice(0, 6).map(([id, old]) => `${id} ($${Math.round(old)}→$${Math.round(shrunk[id])})`)
-    const more = sorted.length > 6 ? ` and ${sorted.length - 6} more` : ''
+    const top3 = sorted.slice(0, 3).map(([id, val]) => `${id} ($${Math.round(val)})`)
+    const more = sorted.length > 3 ? ` and ${sorted.length - 3} more` : ''
     return {
-      valid: true,
-      warning: `Budgets for your departments will be shrunk: ${top6.join(', ')}${more}`,
-      shrunkOverrides: shrunk,
+      valid: false,
+      error: `Budget $${Math.round(newBudget)} is below team overrides total $${Math.round(overrideSum)}: ${top3.join(', ')}${more}. Remove or reduce team overrides first.`,
     }
   }
 

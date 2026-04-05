@@ -6,7 +6,7 @@ import type { SessionSummary, DailySessionTrend, DailyCostTrend } from '@zendash
 
 export const sessions = new Hono()
   .get('/summary', zValidator('query', filterQuerySchema), async (c) => {
-    const { range, team_id, user_id, model } = c.req.valid('query')
+    const { range, team_id, model } = c.req.valid('query')
     const f = buildFilters({ range: range ?? '30d', team_id, model })
 
     // Totals from daily_session_summary

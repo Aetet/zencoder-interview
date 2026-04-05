@@ -2,32 +2,32 @@ import { reatomRoute, urlAtom } from '@reatom/core'
 import { overviewRoute } from './overview/overview-route'
 import { costsRoute } from './costs/costs-route'
 import { teamsRoute } from './teams/teams-route'
-import { settingsRoute } from './settings/settings-route'
+import { alertsRoute } from './settings/alerts-route'
 import { OverviewPage } from './overview/overview-page'
 import { CostsPage } from './costs/costs-page'
-import { SettingsPage } from './settings/settings-page'
+import { TeamsPage } from './teams/teams-page'
+import { AlertsPage } from './settings/alerts-page'
 import { DashboardLayout } from '../shared/components/DashboardLayout'
 
 export const rootRoute = reatomRoute({
   render() {
-    // Redirect / to /overview
     const { pathname } = urlAtom()
     if (pathname === '/' || pathname === '') {
       overviewRoute.go({}, true)
       return <></>
     }
 
+    const isTeams = teamsRoute.match()
     const isCosts = costsRoute.match()
-    const isSettings = settingsRoute.match()
-    const teamsRendered = teamsRoute.render()
+    const isAlerts = alertsRoute.match()
 
     let page: React.ReactNode
-    if (isCosts) {
+    if (isTeams) {
+      page = <TeamsPage />
+    } else if (isCosts) {
       page = <CostsPage />
-    } else if (teamsRendered) {
-      page = teamsRendered
-    } else if (isSettings) {
-      page = <SettingsPage />
+    } else if (isAlerts) {
+      page = <AlertsPage />
     } else {
       page = <OverviewPage />
     }

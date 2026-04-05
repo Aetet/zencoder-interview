@@ -41,5 +41,17 @@ export const api = {
       if (!res.ok) throw new Error(`API error: ${res.status}`)
       return res.json()
     },
+    saveTeam: async (teamId: string, budget: number | null) => {
+      const res = await fetch('/api/budgets/team', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ teamId, budget }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error ?? `API error: ${res.status}`)
+      }
+      return res.json()
+    },
   },
 }

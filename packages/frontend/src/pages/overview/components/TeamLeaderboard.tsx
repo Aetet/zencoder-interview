@@ -5,7 +5,7 @@ import { Card } from '../../../shared/components/Card'
 import { formatCurrency, formatPercent, formatCurrencyPrecise, formatNumber } from '../../../shared/utils/format'
 import { cn } from '../../../shared/utils/cn'
 import { overviewRoute } from '../overview-route'
-import { teamRoute } from '../../teams/teams-route'
+import { teamRoute } from '../../teams/team/team-route'
 import type { Team } from '@zendash/shared'
 
 const ROW_HEIGHT = 37
@@ -57,9 +57,9 @@ function TeamRow({ team, rank }: { team: Team; rank: number }) {
 // ---------------------------------------------------------------------------
 
 export const TeamLeaderboard = reatomComponent(() => {
-  const teamsList = overviewRoute.teams()
-  const live = overviewRoute.isLive()
+  const { teams: teamsList } = overviewRoute.view()
   const turbo = overviewRoute.isTurbo()
+  const active = overviewRoute.isLive() || turbo
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const virtualizer = useVirtualizer({
@@ -74,8 +74,7 @@ export const TeamLeaderboard = reatomComponent(() => {
       <div className="flex items-center justify-between px-6 pt-6 pb-3">
         <h3 className="text-sm font-medium text-foreground-secondary">
           Team Leaderboard
-          {live && <span className="ml-2 inline-block w-1.5 h-1.5 rounded-full bg-success animate-pulse" />}
-          {turbo && <span className="ml-2 inline-block w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />}
+          {active && <span className={cn("ml-2 inline-block w-1.5 h-1.5 rounded-full animate-pulse", turbo ? "bg-warning" : "bg-success")} />}
         </h3>
         <span className="text-[11px] text-foreground-muted">{formatNumber(teamsList.length)} teams</span>
       </div>

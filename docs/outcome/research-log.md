@@ -97,3 +97,48 @@ Combined with CSS `hidden`/`contents` toggling: first mount deferred, subsequent
 5. Sort by timestamp, cap at 25
 
 **Tested with 13 unit tests** using controlled mock data (not real sessions).
+
+---
+
+## R8: Data Pipeline Architecture
+
+**Question:** How to replace in-memory mock data with a real pipeline that can later accept production agent events?
+
+**Approaches considered:**
+
+| # | Approach | Result |
+|---|---|---|
+| 1 | Rust API mirrors TypeScript endpoints | Rejected — two services serving same API is redundant |
+| 2 | TypeScript queries raw events directly | Rejected — too many aggregations at query time |
+| 3 | **Simulator → TimescaleDB → Kafka → Transformer → PostgreSQL → TypeScript** | Chosen |
+
+**Key decisions:**
+
+- **Streaming-level events** (not session-level aggregates) — each `TextDelta`, `ToolUse`, `Usage` is a separate row. Matches real agent output format, enables future session replay.
+- **Per-endpoint baked tables** — one PostgreSQL table per API endpoint (`daily_session_summary`, `daily_token_stats`, etc.). TypeScript does `SELECT` with no computation.
+- **`poll` mode** — bypasses Kafka, writes directly to both databases. Two terminals to run the whole stack. Designed for fast local development.
+- **Turbo SSE endpoint** — generates data at 15 updates/sec with no database connection. Separate from real-live endpoint. Enables UI stress testing without infrastructure.
+
+**Findings:**
+
+- `SUM(active_users)` across `(date, team_id, model)` over-counts users massively. Fixed: `COUNT(DISTINCT user_id)` from `team_user_stats`.
+- `block_on` inside tokio panics. Kafka consumer had to be fully async (replaced sync callback with `async_stream` + `StreamExt`).
+- `rust:latest` Docker image uses newer glibc than `debian:bookworm-slim` runtime. Fixed: `rust:1-bookworm` for matching glibc.
+- Kafka consumer group offsets persist across container restarts. Historical events from a pre-Kafka run are never consumed. Fix: reset consumer group offsets or wipe and re-simulate.
+
+**Tested with 54 Rust tests** using deterministic fixtures (7 session types: completed, errored-tool, errored-api, cancelled, tool-errors-but-completed, opus, haiku). Tests verify token aggregation, cost calculation, tool counting, error classification, event sequence structure, cache behavior pattern.
+
+---
+
+## R9: Mock Pool for Backend Tests
+
+**Question:** Backend tests used to import `store` and `filterSessions()` directly. Routes now query PostgreSQL. How to test without a real database?
+
+**Solution:** Replaceable pool via `setPool()`. Test setup file creates a mock pool that pattern-matches SQL queries and returns deterministic data.
+
+**Challenges:**
+- SQL pattern matching is fragile — query text changes break mocks. Mitigated with `has(q, ...terms)` helper that checks for keyword presence, not exact SQL.
+- Range filters (`INTERVAL '7 days'`) are embedded as string literals in SQL, not as parameters. Mock detects them via string matching.
+- Token-type costs must match `total` exactly — the mock's per-model token counts must produce the same total when pricing is applied.
+
+**Result:** 79 backend tests pass without any database, in <500ms.

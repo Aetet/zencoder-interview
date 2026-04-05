@@ -21,6 +21,12 @@
 | Linting | oxlint | 1.58 | Fast (18ms), but native binding install issues |
 | Types | TypeScript | 5.8 | Strict mode. Module augmentation for RouteChild |
 | Monorepo | pnpm workspaces | — | Simple, works. Shared types via workspace package |
+| DB Client | pg + zapatos | 8.20 / 6.6 | Type-safe PG queries, schema-generated types |
+| Simulator | Rust + sqlx | 1.90 / 0.8 | Streaming event generator, embedded migrations |
+| Queue | Kafka (rdkafka) | 0.36 | Optional — `poll` mode bypasses it entirely |
+| Raw Storage | TimescaleDB | pg16 | Hypertable for time-series agent events |
+| Baked Storage | PostgreSQL | 16 | Pre-aggregated tables, one per API endpoint |
+| Dev Environment | Devbox | — | Reproducible: Node, pnpm, Rust, cmake, librdkafka |
 
 ---
 
@@ -101,8 +107,26 @@ pnpm check:all
 - `@number-flow/react` — animated number transitions (installed but removed from use — candidate for cleanup)
 - `@zendash/shared` — shared types
 
-### Backend: 2 runtime deps
+### Backend: 5 runtime deps
 - `hono` — HTTP framework
 - `@hono/node-server` — Node.js adapter
+- `pg` — PostgreSQL client
+- `zapatos` — Type-safe PostgreSQL queries (schema-generated types)
+- `@types/pg` — TypeScript definitions for pg
 
-**Assessment:** Minimal dependency surface. No unnecessary abstractions. `@number-flow/react` should be removed (caused FPS issues with 1000 rows, replaced with plain text).
+### Rust Simulator: key crates
+- `sqlx` — async PostgreSQL with compile-time checked queries + embedded migrations
+- `rdkafka` — Kafka producer/consumer (optional, behind `kafka` feature flag)
+- `tokio` — async runtime
+- `clap` — CLI subcommands
+- `serde` / `serde_json` — serialization
+- `chrono` — timestamps
+- `rust_decimal` — precise cost calculations (matches TypeScript pricing exactly)
+
+### Infrastructure
+- `TimescaleDB` (latest-pg16) — time-series hypertable for raw streaming events
+- `PostgreSQL` (16) — pre-aggregated baked tables, one per API endpoint
+- `Kafka` (Confluent 7.6) — event queue between simulator and transformer
+- `Devbox` — reproducible dev environment (Node, pnpm, Rust, cmake, librdkafka)
+
+**Assessment:** Minimal dependency surface. `@number-flow/react` should be removed from frontend (caused FPS issues with 1000 rows, replaced with plain text).

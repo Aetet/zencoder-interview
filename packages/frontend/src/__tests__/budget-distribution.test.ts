@@ -31,11 +31,11 @@ describe('BD-1: Auto-distribution', () => {
     for (const id of teams) expect(result[id]).toBe(100)
   })
 
-  it('1.5 - auto budget < $1 clamped to $1', () => {
+  it('1.5 - auto budget near zero when overrides consume most', () => {
     const result = distributeBudget(10, teams, { a: 9 })
     expect(result.a).toBe(9)
-    // remaining $1 / 5 teams = $0.20, clamped to $1
-    for (const id of teams.slice(1)) expect(result[id]).toBe(1)
+    // remaining $1 / 5 teams = $0.20
+    for (const id of teams.slice(1)) expect(result[id]).toBe(0.2)
   })
 
   it('1.6 - single team gets full budget', () => {
@@ -191,28 +191,27 @@ describe('BD-5: Org budget lower than spend', () => {
 // --- BD-6: Org budget lower than overrides ---
 
 describe('BD-6: Org budget lower than sum of overrides', () => {
-  it('6.1 - warning when budget < override sum', () => {
+  it('6.1 - error when budget < override sum', () => {
     const result = validateOrgBudget(400, 100, { a: 300, b: 200 })
-    expect(result.valid).toBe(true)
-    expect(result.warning).toContain('shrunk')
+    expect(result.valid).toBe(false)
+    expect(result.error).toContain('below team overrides')
   })
 
-  it('6.2 - warning lists teams', () => {
+  it('6.2 - error lists teams', () => {
     const result = validateOrgBudget(400, 100, { a: 300, b: 200 })
-    expect(result.warning).toContain('a')
-    expect(result.warning).toContain('b')
+    expect(result.error).toContain('a')
+    expect(result.error).toContain('b')
   })
 
-  it('6.3 - more than 6 overrides shows "and N more"', () => {
+  it('6.3 - more than 3 overrides shows "and N more"', () => {
     const overrides: Record<string, number> = {}
     for (let i = 0; i < 10; i++) overrides[`team${i}`] = 100
     const result = validateOrgBudget(500, 100, overrides)
-    expect(result.warning).toContain('and 4 more')
+    expect(result.error).toContain('and 7 more')
   })
 
-  it('6.4 - overrides shrunk proportionally', () => {
+  it('6.4 - shrinkOverrides still works as utility', () => {
     const shrunk = shrinkOverrides({ a: 300, b: 200 }, 400)
-    // ratio = 400/500 = 0.8
     expect(shrunk.a).toBe(240)
     expect(shrunk.b).toBe(160)
   })
@@ -222,11 +221,10 @@ describe('BD-6: Org budget lower than sum of overrides', () => {
     expect(shrunk.a).toBeGreaterThanOrEqual(1)
   })
 
-  it('6.6 - shrunk overrides returned for saving', () => {
+  it('6.6 - no shrunkOverrides returned (hard error now)', () => {
     const result = validateOrgBudget(400, 100, { a: 300, b: 200 })
-    expect(result.shrunkOverrides).toBeDefined()
-    expect(result.shrunkOverrides!.a).toBe(240)
-    expect(result.shrunkOverrides!.b).toBe(160)
+    expect(result.valid).toBe(false)
+    expect(result.shrunkOverrides).toBeUndefined()
   })
 })
 

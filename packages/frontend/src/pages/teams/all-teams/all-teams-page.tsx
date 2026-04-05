@@ -1,28 +1,22 @@
 import { useRef } from "react"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { reatomComponent } from "@reatom/react"
-import { teamsRoute, teamRoute, editBudgetRoute, editAllTeamRoute } from "./teams-route"
-import { settingsRoute } from "../settings/settings-route"
-import { CoinsIcon } from "../../shared/components/icons/CoinsIcon"
-import { Modal } from "../../shared/components/Modal"
-import { Input } from "../../shared/components/Input"
-import { Card } from "../../shared/components/Card"
-import { formatCurrency, formatPercent, formatCurrencyPrecise } from "../../shared/utils/format"
-import { cn } from "../../shared/utils/cn"
+import { teamsRoute, budgetView } from "../teams-route"
+import { teamRoute } from "../team/team-route"
+import { editBudgetRoute } from "../edit-budget/edit-budget-route"
+import { editGridTeamBudgetRoute } from "../edit-grid-team-budget/edit-grid-team-budget-route"
+import { EditBudgetModal } from "../edit-budget/EditBudgetModal"
+import { EditGridTeamBudgetModal } from "../edit-grid-team-budget/EditGridTeamBudgetModal"
+import { CoinsIcon } from "../../../shared/components/icons/CoinsIcon"
+import { Card } from "../../../shared/components/Card"
+import { formatCurrency, formatPercent, formatCurrencyPrecise } from "../../../shared/utils/format"
+import { cn } from "../../../shared/utils/cn"
 import type { Team } from "@zendash/shared"
 
-// ---------------------------------------------------------------------------
-// Grid constants
-// ---------------------------------------------------------------------------
-
 const ROW_HEIGHT = 38
-const GRID_COLS = "minmax(100px, 1fr) 80px 90px 110px 85px 75px"
+const GRID_COLS = "minmax(100px, 1fr) 80px 90px 150px 85px 75px"
 const CELL = "py-2 px-3 text-[13px] text-foreground tabular-nums truncate text-right"
 const HEADER_CELL = "py-2.5 px-3 text-[11px] font-medium uppercase tracking-[0.05em] text-foreground-muted text-right"
-
-// ---------------------------------------------------------------------------
-// All Teams page — /teams (exact)
-// ---------------------------------------------------------------------------
 
 export const AllTeamsContent = reatomComponent(() => {
   const teams = teamsRoute.teamsList()
@@ -34,79 +28,22 @@ export const AllTeamsContent = reatomComponent(() => {
         <OrgBudgetInline />
       </div>
       <AllTeamsGrid teams={teams} />
-      <EditOrgBudgetModal />
+      <EditBudgetModal />
+      <EditGridTeamBudgetModal />
     </>
   )
 }, "AllTeamsContent")
 
-const EditOrgBudgetModal = reatomComponent(() => {
-  const open = editBudgetRoute.isOpen()
-  if (!open) return null
-
-  return (
-    <Modal open onClose={() => editBudgetRoute.close()} title="Edit Org Budget">
-      <form
-        onSubmit={e => {
-          e.preventDefault()
-          editBudgetRoute.save()
-        }}
-      >
-        <label className="text-xs text-foreground-muted">
-          Monthly Budget (USD)
-        </label>
-        <div className="mt-2">
-          <EditOrgBudgetInput />
-        </div>
-        <OrgBudgetValidation />
-        <div className="flex gap-3 mt-6">
-          <button
-            type="submit"
-            className="flex-1 bg-primary text-primary-foreground py-2 rounded-xl text-sm font-medium hover:opacity-90 cursor-pointer"
-          >
-            Save
-          </button>
-          <button
-            type="button"
-            onClick={() => editBudgetRoute.close()}
-            className="flex-1 bg-accent text-foreground py-2 rounded-xl text-sm font-medium hover:bg-accent/80 cursor-pointer"
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
-    </Modal>
-  )
-}, 'EditOrgBudgetModal')
-
-const OrgBudgetValidation = reatomComponent(() => {
-  const v = editBudgetRoute.validation()
-  if (!v) return null
-  if (v.error) return <div className="text-xs mt-2 text-error">{v.error}</div>
-  if (v.warning) return <div className="text-xs mt-2 text-warning">{v.warning}</div>
-  return null
-}, 'OrgBudgetValidation')
-
-const EditOrgBudgetInput = reatomComponent(() => {
-  return (
-    <Input
-      type="number"
-      value={editBudgetRoute.editingValue()}
-      onChange={v => editBudgetRoute.editingValue.set(v)}
-      autoFocus
-    />
-  )
-}, 'EditOrgBudgetInput')
-
 const OrgBudgetInline = reatomComponent(() => {
+  const { monthlyBudget } = budgetView()
   const teams = teamsRoute.teamsList()
   const totalSpend = teams.reduce((sum, t) => sum + t.cost, 0)
-  const budget = Number(settingsRoute.budgetInput()) || 0
 
   return (
     <div className="flex items-center gap-2">
       <span className="text-sm tabular-nums text-foreground">
         {formatCurrencyPrecise(totalSpend)}
-        <span className="text-foreground-muted"> / {formatCurrency(budget)}</span>
+        <span className="text-foreground-muted"> / {formatCurrency(monthlyBudget)}</span>
       </span>
       <button
         onClick={() => editBudgetRoute.open()}
@@ -117,15 +54,13 @@ const OrgBudgetInline = reatomComponent(() => {
       </button>
     </div>
   )
-}, 'OrgBudgetInline')
-
-// ---------------------------------------------------------------------------
-// All Teams virtualized grid
-// ---------------------------------------------------------------------------
+}, "OrgBudgetInline")
 
 const AllTeamsGrid = reatomComponent(({ teams }: { teams: Team[] }) => {
+  const { teamBudgets = [] } = budgetView()
   const scrollRef = useRef<HTMLDivElement>(null)
-  const budgets = settingsRoute.computedTeamBudgets()
+
+  const budgetMap = new Map(teamBudgets.map(tb => [tb.teamId, tb.budget]))
 
   const virtualizer = useVirtualizer({
     count: teams.length,
@@ -149,16 +84,33 @@ const AllTeamsGrid = reatomComponent(({ teams }: { teams: Team[] }) => {
         <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
           {virtualizer.getVirtualItems().map(virtualRow => {
             const t = teams[virtualRow.index]
-            return <TeamGridRow key={t.id} team={t} teamBudget={budgets[t.id] ?? 1} index={virtualRow.index} start={virtualRow.start} />
+            return (
+              <TeamGridRow
+                key={t.id}
+                team={t}
+                teamBudget={budgetMap.get(t.id) ?? 1}
+                index={virtualRow.index}
+                start={virtualRow.start}
+              />
+            )
           })}
         </div>
       </div>
     </Card>
   )
-}, 'AllTeamsGrid')
+}, "AllTeamsGrid")
 
-function TeamGridRow({ team, teamBudget, index, start }: { team: Team; teamBudget: number; index: number; start: number }) {
-
+function TeamGridRow({
+  team,
+  teamBudget,
+  index,
+  start,
+}: {
+  team: Team
+  teamBudget: number
+  index: number
+  start: number
+}) {
   return (
     <div
       className={cn(
@@ -168,18 +120,16 @@ function TeamGridRow({ team, teamBudget, index, start }: { team: Team; teamBudge
       style={{
         gridTemplateColumns: GRID_COLS,
         position: "absolute",
-        top: 0,
-        left: 0,
-        width: "100%",
+        top: 0, left: 0, width: "100%",
         height: ROW_HEIGHT,
         transform: `translateY(${start}px)`,
       }}
-      onClick={() => editAllTeamRoute.open(team.id)}
+      onClick={() => editGridTeamBudgetRoute.open(team.id)}
     >
       <div className="py-2 px-4 text-[13px] text-foreground font-medium truncate">
         <span
           className="hover:text-accent-foreground hover:underline cursor-pointer"
-          onClick={(e) => { e.stopPropagation(); teamRoute.go({ teamId: team.id }) }}
+          onClick={e => { e.stopPropagation(); teamRoute.go({ teamId: team.id }) }}
         >
           {team.name}
         </span>

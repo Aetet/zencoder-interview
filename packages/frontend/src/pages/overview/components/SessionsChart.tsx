@@ -5,10 +5,9 @@ import { cn } from '../../../shared/utils/cn'
 import { overviewRoute } from '../overview-route'
 
 export const SessionsChart = reatomComponent(() => {
-  const data = overviewRoute.sessionTrend()
-  const live = overviewRoute.isLive()
+  const { sessionTrend: data } = overviewRoute.view()
   const turbo = overviewRoute.isTurbo()
-  const active = live || turbo
+  const active = overviewRoute.isLive() || turbo
 
   return (
     <Card>

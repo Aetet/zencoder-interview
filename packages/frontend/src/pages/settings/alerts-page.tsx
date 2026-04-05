@@ -1,7 +1,7 @@
 import { reatomComponent } from '@reatom/react'
-import { settingsRoute } from './settings-route'
+import { alertsRoute } from './alerts-route'
 import { costsRoute } from '../costs/costs-route'
-import { teamRoute } from '../teams/teams-route'
+import { teamRoute } from '../teams/team/team-route'
 import { Card } from '../../shared/components/Card'
 import { Skeleton } from '../../shared/components/Skeleton'
 import { formatCurrency, formatTimeAgo } from '../../shared/utils/format'
@@ -9,13 +9,10 @@ import { cn } from '../../shared/utils/cn'
 
 const THRESHOLD_LEVELS = [50, 75, 90, 100]
 
-export const SettingsPage = reatomComponent(() => {
-  const ready = settingsRoute.loader.ready()
+export const AlertsPage = reatomComponent(() => {
+  const ready = alertsRoute.loader.ready()
 
   if (!ready) return <Skeleton className="h-96" />
-
-  // Sync server config into atoms on first render
-  settingsRoute.initFromServer()
 
   return (
     <div className="flex flex-col gap-5 h-full">
@@ -69,11 +66,11 @@ export const SettingsPage = reatomComponent(() => {
       </div>
     </div>
   )
-}, 'SettingsPage')
+}, 'AlertsPage')
 
 const AlertThresholds = reatomComponent(() => {
-  const budgetValue = settingsRoute.budgetInput()
-  const thresholdsState = settingsRoute.thresholds()
+  const budgetValue = alertsRoute.monthlyBudget()
+  const thresholdsState = alertsRoute.thresholds()
 
   return (
     <div className="space-y-2">
@@ -82,11 +79,11 @@ const AlertThresholds = reatomComponent(() => {
         return (
           <label key={level} className="flex items-center justify-between py-1.5 cursor-pointer">
             <span className="text-sm text-foreground">
-              {level}% — Notify at {formatCurrency(Number(budgetValue) * level / 100)}
+              {level}% — Notify at {formatCurrency(budgetValue * level / 100)}
             </span>
             <button
               type="button"
-              onClick={() => settingsRoute.thresholds.set((s) => ({ ...s, [level]: !s[level] }))}
+              onClick={() => alertsRoute.thresholds.set((s) => ({ ...s, [level]: !s[level] }))}
               className={cn('w-9 h-5 rounded-full transition-colors relative', active ? 'bg-primary' : 'bg-accent')}
             >
               <div className={cn(
@@ -102,7 +99,7 @@ const AlertThresholds = reatomComponent(() => {
 }, 'AlertThresholds')
 
 const AlertHistory = reatomComponent(() => {
-  const alerts = settingsRoute.alertHistory()
+  const alerts = alertsRoute.alertHistory()
 
   if (alerts.length === 0) {
     return <p className="text-sm text-foreground-muted">No alerts yet.</p>

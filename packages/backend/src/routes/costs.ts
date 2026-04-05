@@ -12,7 +12,7 @@ const MODEL_PRICING: Record<string, { input: number; output: number; cacheCreate
 
 export const costs = new Hono()
   .get('/breakdown', zValidator('query', filterQuerySchema), async (c) => {
-    const { range, team_id, user_id, model } = c.req.valid('query')
+    const { range, team_id, model } = c.req.valid('query')
     const f = buildFilters({ range: range ?? '30d', team_id, model })
 
     // Total cost
@@ -186,15 +186,21 @@ export const costs = new Hono()
        GROUP BY dss.team_id, t.name`,
     )
 
-    const teamCount = (await pool.query('SELECT COUNT(*) AS cnt FROM teams')).rows[0].cnt
-    const teamBudgetBase = num(teamCount) > 0 ? monthlyBudget / num(teamCount) : 0
+    const overrides: Record<string, number> = config?.team_overrides ?? {}
+    const teamCount = num((await pool.query('SELECT COUNT(*) AS cnt FROM teams')).rows[0].cnt)
+    const overrideSum = Object.values(overrides).reduce((s, v) => s + v, 0)
+    const nonOverriddenCount = teamCount - Object.keys(overrides).length
+    const autoBudget = nonOverriddenCount > 0 ? Math.max(1, (monthlyBudget - overrideSum) / nonOverriddenCount) : 0
 
-    const teamBudgets = teamSpendResult.rows.map((r) => ({
-      teamId: r.team_id as string,
-      teamName: r.team_name as string,
-      budget: r2(teamBudgetBase),
-      spent: r2(num(r.spent)),
-    }))
+    const teamBudgets = teamSpendResult.rows.map((r) => {
+      const teamId = r.team_id as string
+      return {
+        teamId,
+        teamName: r.team_name as string,
+        budget: r2(teamId in overrides ? overrides[teamId] : autoBudget),
+        spent: r2(num(r.spent)),
+      }
+    })
 
     const result: BudgetData = {
       monthlyBudget,

@@ -65,7 +65,10 @@ export function generateAlerts(input: AlertInput): AlertEvent[] {
       .filter(s => new Date(s.timestamp) >= oneDayAgo)
       .reduce((sum, s) => sum + s.cost, 0)
     const weekCost = teamSessions
-      .filter(s => new Date(s.timestamp) >= sevenDaysAgo)
+      .filter(s => {
+        const t = new Date(s.timestamp)
+        return t >= sevenDaysAgo && t < oneDayAgo
+      })
       .reduce((sum, s) => sum + s.cost, 0)
     const weekDailyAvg = weekCost / 7
 

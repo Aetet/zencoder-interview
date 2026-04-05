@@ -139,17 +139,20 @@ Agent analytics dashboard for engineering leaders to monitor AI coding assistant
 
 | Metric | Value |
 |---|---|
-| Source lines | 6,100 |
-| Components | 39 |
-| Unit tests | 222 |
+| TypeScript source lines | ~6,100 |
+| Rust source lines | ~1,800 |
+| React components | 39 |
+| TS tests (backend) | 79 |
+| Rust tests | 54 |
+| SQL migrations | 10 |
 | E2E tests | 45 |
 | Lint warnings | 0 |
 | Type errors | 0 |
-| Bundle size | ~280KB gzipped (estimate) |
 | Teams rendered | 1000 at 60fps |
-| SSE throughput | 15 events/sec |
-| Initial load | <3s |
-| Tab switch | <100ms (cached), ~700ms (first mount) |
+| SSE (real data) | polls every 5s |
+| SSE (turbo mode) | 15 updates/sec |
+| Docker services | 5 |
+| Poll rate | ~900 sessions / 30s |
 
 ---
 
@@ -179,19 +182,57 @@ Agent analytics dashboard for engineering leaders to monitor AI coding assistant
 
 ---
 
+## Stage 1: Real Data Pipeline (2026-04-05)
+
+Replaced in-memory mock data with a full data pipeline.
+
+### What was built
+
+**Rust simulator** (`services/rust-simulator/`) — single binary with subcommands:
+- Generates streaming-level agent events matching the Claw Code reference agent format (SessionStart, TextDelta, ToolUse, ToolResult, Usage, MessageStop, SessionEnd)
+- Stores raw events in TimescaleDB hypertable
+- Transforms events via Kafka into pre-aggregated PostgreSQL tables
+- `poll` command: seeds 3 days + generates ~900 sessions every 30s (no Kafka needed)
+- Observation tools: `status`, `verify`, `kafka-monitor`
+- 54 Rust tests with deterministic fixtures
+
+**Infrastructure** — Docker Compose with TimescaleDB (5433), PostgreSQL (5432), Kafka (9092), Zookeeper
+
+**Backend rewrite** — all 9 route files rewritten from in-memory mock to PostgreSQL queries using `pg` + `zapatos` for type safety. Mock pool for tests (79 tests still passing).
+
+**Live SSE from real data** — overview page auto-connects to `/api/overview/live` which polls PostgreSQL every 5s. Data updates as the simulator writes new sessions.
+
+**Turbo mode** — `/api/turbo/live` endpoint generates data at 15 updates/sec with no database. "Turbo (No DB)" button on overview for UI stress testing.
+
+**Developer experience** — `devbox.json` for reproducible environment (Node, pnpm, Rust, cmake, librdkafka). Two terminals to run: `cargo run -- poll` + `pnpm dev`.
+
+### Key numbers (Stage 1)
+
+| Metric | Value |
+|---|---|
+| Rust source lines | ~1,800 |
+| Rust tests | 54 |
+| SQL migrations | 10 (3 TimescaleDB + 7 PostgreSQL) |
+| Backend tests | 79 (mock pool, no DB needed) |
+| Docker services | 5 (TimescaleDB, PostgreSQL, Kafka, Zookeeper, Simulator) |
+| Events per session | 5–50 (streaming level) |
+| Poll rate | ~900 sessions / 30s |
+
+---
+
 ## Weak Points
 
-1. **Mock data only** — no real database. The in-memory store resets on server restart. Budget config, alert history — all ephemeral.
+1. ~~**Mock data only**~~ — **Resolved in Stage 1.** Real PostgreSQL persistence, Rust simulator, Kafka pipeline.
 
 2. **No authentication** — anyone can access any endpoint. No org/team scoping.
 
 3. **Alert toggles are visual-only** — email/Slack delivery toggles render but don't connect to any notification system.
 
-4. **CSV export** — button exists but the actual export logic isn't implemented in this session.
+4. **CSV export** — button exists but the actual export logic isn't implemented.
 
 5. **No i18n** — all strings hardcoded in English.
 
-6. **`formatCurrency` always shows 2 decimals** — `$0.00 / $6,000.00` is verbose for large numbers. Adaptive formatting (show decimals only when < $10) would be cleaner.
+6. **`formatCurrency` always shows 2 decimals** — `$0.00 / $6,000.00` is verbose for large numbers.
 
 ---
 
@@ -204,14 +245,14 @@ Agent analytics dashboard for engineering leaders to monitor AI coding assistant
 4. Connect alert delivery toggles to actual notification logic
 
 ### Short-term (next sprint)
-1. Real database (PostgreSQL) replacing in-memory store
-2. Authentication + org scoping
-3. Budget history tracking (audit log of changes)
-4. Route-level code splitting for faster initial load
+1. Authentication + org scoping
+2. Budget history tracking (audit log of changes)
+3. Route-level code splitting for faster initial load
+4. Connect to real agent telemetry (replace simulator with real events)
 
 ### Medium-term (V2)
-1. Real-time SSE from production data (not mock)
-2. Quality deep-dive view (Tier 2 metrics)
-3. Optimization Advisor (AI-powered recommendations)
-4. Slack integration for alerts
-5. Custom date range picker
+1. Quality deep-dive view (Tier 2 metrics)
+2. Optimization Advisor (AI-powered recommendations)
+3. Slack integration for alerts
+4. Custom date range picker
+5. Per-session drill-down (link to agent task)

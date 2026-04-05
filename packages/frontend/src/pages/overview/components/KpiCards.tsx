@@ -5,14 +5,15 @@ import { formatCurrency, formatNumber, formatPercent, formatCurrencyPrecise } fr
 
 export const KpiCards = reatomComponent(() => {
   const live = overviewRoute.isLive() || overviewRoute.isTurbo()
+  const v = overviewRoute.view()
 
   return (
     <div className="grid grid-cols-5 gap-4">
-      <KpiCard label="Total Sessions" value={formatNumber(overviewRoute.totalSessions())} delta="+12%" deltaType="positive" live={live} />
-      <KpiCard label="Total Cost" value={formatCurrency(overviewRoute.totalCost())} delta="+8%" deltaType="neutral" live={live} />
-      <KpiCard label="Active Users" value={`${overviewRoute.activeUsers()}/${overviewRoute.totalUsers()}`} delta={formatPercent(overviewRoute.adoptionRate()) + ' adoption'} live={live} />
-      <KpiCard label="Completion Rate" value={formatPercent(overviewRoute.completionRate())} deltaType="positive" live={live} />
-      <KpiCard label="Cost / Session" value={formatCurrencyPrecise(overviewRoute.costPerSession())} delta="↓ -5%" deltaType="positive" live={live} />
+      <KpiCard label="Total Sessions" value={formatNumber(v.totalSessions)} delta="+12%" deltaType="positive" live={live} />
+      <KpiCard label="Total Cost" value={formatCurrency(v.totalCost)} delta="+8%" deltaType="neutral" live={live} />
+      <KpiCard label="Active Users" value={`${v.activeUsers}/${v.totalUsers}`} delta={formatPercent(v.adoptionRate) + ' adoption'} live={live} />
+      <KpiCard label="Completion Rate" value={formatPercent(v.completionRate)} deltaType="positive" live={live} />
+      <KpiCard label="Cost / Session" value={formatCurrencyPrecise(v.costPerSession)} delta="↓ -5%" deltaType="positive" live={live} />
     </div>
   )
 }, 'KpiCards')

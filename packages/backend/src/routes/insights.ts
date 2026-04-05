@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { filterQuerySchema } from '@zendash/shared/schemas'
-import { pool, buildFilters, r2, num } from '../db.js'
+import { pool, buildFilters, num } from '../db.js'
 import type { Insight } from '@zendash/shared'
 
 export const insights = new Hono()

@@ -1,12 +1,15 @@
 import { reatomComponent } from '@reatom/react'
-import { overviewRoute, costsRoute, teamsRoute, settingsRoute } from '../../routes'
+import { overviewRoute } from '../../pages/overview/overview-route'
+import { costsRoute } from '../../pages/costs/costs-route'
+import { teamsRoute } from '../../pages/teams/teams-route'
+import { alertsRoute } from '../../pages/settings/alerts-route'
 import { cn } from '../utils/cn'
 
 const NAV_ITEMS = [
   { label: 'Overview', route: overviewRoute },
   { label: 'Costs', route: costsRoute },
   { label: 'Teams', route: teamsRoute },
-  { label: 'Alerts', route: settingsRoute },
+  { label: 'Alerts', route: alertsRoute },
 ]
 
 export const Sidebar = reatomComponent(() => {
