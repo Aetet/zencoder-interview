@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { filterQuerySchema } from '@zendash/shared/schemas'
-import { filterSessions } from '../mock/store.js'
+import { pool, buildFilters, num } from '../db.js'
 import type { TopFilesData } from '@zendash/shared'
 
 const FILE_PATHS = [
@@ -23,14 +23,17 @@ const FILE_PATHS = [
 ]
 
 export const files = new Hono()
-  .get('/top', zValidator('query', filterQuerySchema), (c) => {
+  .get('/top', zValidator('query', filterQuerySchema), async (c) => {
     const { range, team_id, model } = c.req.valid('query')
-    const params = { range: range ?? '30d', team_id, model }
+    const f = buildFilters({ range: range ?? '30d', team_id, model })
 
-    const filtered = filterSessions(params)
-    const totalSessions = filtered.length
+    const sessResult = await pool.query(
+      `SELECT COALESCE(SUM(total_sessions), 0) AS cnt FROM daily_session_summary ${f.where}`,
+      f.params,
+    )
+    const totalSessions = num(sessResult.rows[0].cnt)
 
-    // Simulate file access patterns based on session count
+    // Deterministic file access simulation (same logic as mock version)
     const mostRead = FILE_PATHS.slice(0, 10).map((path, i) => {
       const weight = 1 - i * 0.08
       const count = Math.round(totalSessions * weight * (0.8 + Math.random() * 0.4))

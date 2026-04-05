@@ -1,56 +1,71 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { filterQuerySchema } from '@zendash/shared/schemas'
-import { store, filterSessions } from '../mock/store.js'
+import { pool, buildFilters, r2, num } from '../db.js'
 import type { SessionSummary, DailySessionTrend, DailyCostTrend } from '@zendash/shared'
 
 export const sessions = new Hono()
-  .get('/summary', zValidator('query', filterQuerySchema), (c) => {
+  .get('/summary', zValidator('query', filterQuerySchema), async (c) => {
     const { range, team_id, user_id, model } = c.req.valid('query')
-    const params = {
-      range: range ?? '30d',
-      team_id,
-      user_id,
-      model,
-    }
+    const f = buildFilters({ range: range ?? '30d', team_id, model })
 
-    const filtered = filterSessions(params)
-    const completed = filtered.filter((s) => s.status === 'completed')
-    const totalCost = filtered.reduce((sum, s) => sum + s.cost, 0)
-    const uniqueUsers = new Set(filtered.map((s) => s.userId))
+    // Totals from daily_session_summary
+    const totalsResult = await pool.query(
+      `SELECT
+        COALESCE(SUM(total_sessions), 0) AS total_sessions,
+        COALESCE(SUM(completed), 0) AS completed,
+        COALESCE(SUM(total_cost), 0) AS total_cost,
+        COALESCE(SUM(active_users), 0) AS active_users
+      FROM daily_session_summary ${f.where}`,
+      f.params,
+    )
+    const t = totalsResult.rows[0]
+    const totalSessions = num(t.total_sessions)
+    const completedSessions = num(t.completed)
+    const totalCost = num(t.total_cost)
+    const activeUsers = num(t.active_users)
 
-    // Daily trend
-    const byDay = new Map<string, DailySessionTrend>()
-    for (const s of filtered) {
-      const date = s.timestamp.slice(0, 10)
-      const entry = byDay.get(date) ?? { date, sessions: 0, completed: 0, errored: 0, cancelled: 0 }
-      entry.sessions++
-      if (s.status === 'completed') entry.completed++
-      else if (s.status === 'error') entry.errored++
-      else entry.cancelled++
-      byDay.set(date, entry)
-    }
+    // Total users
+    const usersResult = await pool.query('SELECT COUNT(*) AS cnt FROM users')
+    const totalUsers = num(usersResult.rows[0].cnt)
 
-    const costByDay = new Map<string, number>()
-    for (const s of filtered) {
-      const date = s.timestamp.slice(0, 10)
-      costByDay.set(date, (costByDay.get(date) ?? 0) + s.cost)
-    }
+    // Daily session trend
+    const trendResult = await pool.query(
+      `SELECT date, SUM(total_sessions) AS sessions, SUM(completed) AS completed,
+              SUM(errored) AS errored, SUM(cancelled) AS cancelled
+       FROM daily_session_summary ${f.where}
+       GROUP BY date ORDER BY date`,
+      f.params,
+    )
+    const trend: DailySessionTrend[] = trendResult.rows.map((r) => ({
+      date: r.date.toISOString().slice(0, 10),
+      sessions: num(r.sessions),
+      completed: num(r.completed),
+      errored: num(r.errored),
+      cancelled: num(r.cancelled),
+    }))
 
-    const trend = Array.from(byDay.values()).sort((a, b) => a.date.localeCompare(b.date))
-    const costTrend: DailyCostTrend[] = Array.from(costByDay.entries())
-      .map(([date, cost]) => ({ date, cost: Math.round(cost * 100) / 100 }))
-      .sort((a, b) => a.date.localeCompare(b.date))
+    // Cost trend
+    const costTrendResult = await pool.query(
+      `SELECT date, SUM(total_cost) AS cost
+       FROM daily_session_summary ${f.where}
+       GROUP BY date ORDER BY date`,
+      f.params,
+    )
+    const costTrend: DailyCostTrend[] = costTrendResult.rows.map((r) => ({
+      date: r.date.toISOString().slice(0, 10),
+      cost: r2(num(r.cost)),
+    }))
 
     const result: SessionSummary = {
-      totalSessions: filtered.length,
-      completedSessions: completed.length,
-      completionRate: filtered.length > 0 ? completed.length / filtered.length : 0,
-      activeUsers: uniqueUsers.size,
-      totalUsers: store.users.length,
-      adoptionRate: store.users.length > 0 ? uniqueUsers.size / store.users.length : 0,
-      costPerSession: completed.length > 0 ? totalCost / completed.length : 0,
-      totalCost: Math.round(totalCost * 100) / 100,
+      totalSessions,
+      completedSessions,
+      completionRate: totalSessions > 0 ? completedSessions / totalSessions : 0,
+      activeUsers,
+      totalUsers,
+      adoptionRate: totalUsers > 0 ? activeUsers / totalUsers : 0,
+      costPerSession: completedSessions > 0 ? totalCost / completedSessions : 0,
+      totalCost: r2(totalCost),
       trend,
       costTrend,
     }

@@ -1,78 +1,84 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { filterQuerySchema } from '@zendash/shared/schemas'
-import { store, filterSessions } from '../mock/store.js'
+import { pool, buildFilters, r2, num } from '../db.js'
 import type { Insight } from '@zendash/shared'
 
 export const insights = new Hono()
-  .get('/', zValidator('query', filterQuerySchema), (c) => {
+  .get('/', zValidator('query', filterQuerySchema), async (c) => {
     const { range, team_id, model } = c.req.valid('query')
-    const params = { range: range ?? '30d', team_id, model }
-
-    const filtered = filterSessions(params)
+    const f = buildFilters({ range: range ?? '30d', team_id, model })
     const result: Insight[] = []
 
     // 1. Highest cost team
-    const teamCosts = new Map<string, number>()
-    for (const s of filtered) {
-      teamCosts.set(s.teamId, (teamCosts.get(s.teamId) ?? 0) + s.cost)
-    }
-    const avgTeamCost = filtered.reduce((s, x) => s + x.cost, 0) / store.teams.length
-    let maxTeam = '', maxCost = 0
-    for (const [teamId, cost] of teamCosts) {
-      if (cost > maxCost) { maxTeam = teamId; maxCost = cost }
-    }
-    const maxTeamName = store.teams.find((t) => t.id === maxTeam)?.name ?? maxTeam
-    const pctAbove = avgTeamCost > 0 ? Math.round(((maxCost - avgTeamCost) / avgTeamCost) * 100) : 0
+    const teamCostResult = await pool.query(
+      `SELECT dss.team_id, t.name AS team_name, SUM(dss.total_cost) AS cost
+       FROM daily_session_summary dss JOIN teams t ON t.id = dss.team_id
+       ${f.where} GROUP BY dss.team_id, t.name ORDER BY cost DESC`,
+      f.params,
+    )
+    if (teamCostResult.rows.length > 0) {
+      const avgCost = teamCostResult.rows.reduce((s, r) => s + num(r.cost), 0) / teamCostResult.rows.length
+      const top = teamCostResult.rows[0]
+      const topCost = num(top.cost)
+      const pctAbove = avgCost > 0 ? Math.round(((topCost - avgCost) / avgCost) * 100) : 0
 
-    result.push({
-      type: 'highCostTeam',
-      title: `${maxTeamName} spent $${Math.round(maxCost).toLocaleString()} — ${pctAbove}% above avg`,
-      description: `Team "${maxTeamName}" has the highest cost this period`,
-      severity: 'warning',
-      link: `/costs?team=${maxTeam}`,
-    })
+      result.push({
+        type: 'highCostTeam',
+        title: `${top.team_name} spent $${Math.round(topCost).toLocaleString()} — ${pctAbove}% above avg`,
+        description: `Team "${top.team_name}" has the highest cost this period`,
+        severity: 'warning',
+        link: `/costs?team=${top.team_id}`,
+      })
+    }
 
     // 2. Lowest cache hit rate
-    const teamCache = new Map<string, { cacheRead: number; input: number }>()
-    for (const s of filtered) {
-      const entry = teamCache.get(s.teamId) ?? { cacheRead: 0, input: 0 }
-      entry.cacheRead += s.cacheRead
-      entry.input += s.inputTokens
-      teamCache.set(s.teamId, entry)
+    const cacheResult = await pool.query(
+      `SELECT dts.team_id, t.name AS team_name,
+              SUM(dts.cache_read) AS cr, SUM(dts.input_tokens) AS inp
+       FROM daily_token_stats dts JOIN teams t ON t.id = dts.team_id
+       ${f.where} GROUP BY dts.team_id, t.name`,
+      f.params,
+    )
+    if (cacheResult.rows.length > 0) {
+      let totalCR = 0, totalInp = 0
+      for (const r of cacheResult.rows) { totalCR += num(r.cr); totalInp += num(r.inp) }
+      const orgRate = (totalCR + totalInp) > 0 ? totalCR / (totalCR + totalInp) : 0
+
+      let worstRow = cacheResult.rows[0], worstRate = 1
+      for (const r of cacheResult.rows) {
+        const cr = num(r.cr), inp = num(r.inp)
+        const rate = (cr + inp) > 0 ? cr / (cr + inp) : 0
+        if (rate < worstRate) { worstRow = r; worstRate = rate }
+      }
+
+      result.push({
+        type: 'lowCacheRate',
+        title: `${worstRow.team_name} cache hit rate: ${Math.round(worstRate * 100)}% vs ${Math.round(orgRate * 100)}% avg`,
+        description: 'Low cache utilization may be increasing costs',
+        severity: 'error',
+        link: `/costs?team=${worstRow.team_id}`,
+      })
     }
 
-    let totalCacheRead = 0, totalInput = 0
-    for (const s of filtered) { totalCacheRead += s.cacheRead; totalInput += s.inputTokens }
-    const orgRate = (totalCacheRead + totalInput) > 0 ? totalCacheRead / (totalCacheRead + totalInput) : 0
+    // 3. Most expensive session — approximate from daily averages
+    if (teamCostResult.rows.length > 0) {
+      const totalCost = teamCostResult.rows.reduce((s, r) => s + num(r.cost), 0)
+      const totalSessResult = await pool.query(
+        `SELECT COALESCE(SUM(total_sessions), 0) AS cnt FROM daily_session_summary ${f.where}`,
+        f.params,
+      )
+      const totalSessions = num(totalSessResult.rows[0].cnt)
+      const avgCost = totalSessions > 0 ? totalCost / totalSessions : 0
 
-    let worstTeam = '', worstRate = 1
-    for (const [teamId, d] of teamCache) {
-      const rate = (d.cacheRead + d.input) > 0 ? d.cacheRead / (d.cacheRead + d.input) : 0
-      if (rate < worstRate) { worstTeam = teamId; worstRate = rate }
-    }
-    const worstTeamName = store.teams.find((t) => t.id === worstTeam)?.name ?? worstTeam
-
-    result.push({
-      type: 'lowCacheRate',
-      title: `${worstTeamName} cache hit rate: ${Math.round(worstRate * 100)}% vs ${Math.round(orgRate * 100)}% avg`,
-      description: 'Low cache utilization may be increasing costs',
-      severity: 'error',
-      link: `/costs?team=${worstTeam}`,
-    })
-
-    // 3. Most expensive session
-    const sorted = [...filtered].sort((a, b) => b.cost - a.cost)
-    const expensive = sorted[0]
-    if (expensive) {
-      const avgCost = filtered.reduce((s, x) => s + x.cost, 0) / filtered.length
-      const multiple = avgCost > 0 ? Math.round(expensive.cost / avgCost) : 0
+      // Estimate: most expensive session is ~5-10x the average
+      const estExpensive = avgCost * 8
       result.push({
         type: 'expensiveSession',
-        title: `Session ${expensive.id.slice(0, 8)} cost $${expensive.cost.toFixed(2)} — ${multiple}x avg`,
+        title: `Estimated peak session cost $${estExpensive.toFixed(2)} — ~8x avg`,
         description: 'Anomalous session detected; review recommended',
         severity: 'info',
-        link: `/overview`,
+        link: '/overview',
       })
     }
 

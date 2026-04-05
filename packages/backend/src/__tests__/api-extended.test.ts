@@ -5,6 +5,7 @@
  * API-8 (8.3), API-9 (9.4), API-11 (11.2-11.5)
  */
 import { describe, it, expect } from 'vitest'
+import './setup.js'
 import app from '../app.js'
 
 async function get<T = any>(path: string): Promise<{ status: number; body: T }> {

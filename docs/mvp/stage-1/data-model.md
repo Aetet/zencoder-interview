@@ -1,227 +1,391 @@
-# Data Model: From Agent Events to Dashboard
+# Data Model: From Streaming Agent Events to Dashboard
 
-This document explains every data structure in the pipeline, why each field exists, how it maps to the reference AI agent, and how it flows through the system.
+## Overview: What an AI Agent Produces in Real Time
 
-## Overview: What an AI Agent Produces
+The reference agent (Claw Code) is a conversational AI coding assistant. During execution, it produces a **stream of events** -- the same Server-Sent Events (SSE) that flow from the Claude API through the agent runtime.
 
-The reference agent (Claw Code) is a conversational AI coding assistant. When a developer uses it, a **session** happens:
+A single session looks like this in real time:
 
-1. Developer asks a question or gives a task
-2. The agent calls the LLM API (Claude), which streams back text and tool calls
-3. The agent executes tools (bash, read_file, edit_file, etc.) with permission checks
-4. The agent loops: LLM call -> tool execution -> LLM call -> ... until done
-5. Each LLM call consumes **tokens** (the billing unit) across 4 categories
+```
+User asks: "Fix the login bug"
+    ↓
+[TextDelta] "I'll investigate the login issue."
+[TextDelta] " Let me check the auth module."
+[ToolUse]   { id: "t-1", name: "read_file", input: { path: "src/auth.rs" } }
+[Usage]     { input: 245, output: 89, cache_creation: 3200, cache_read: 0 }
+[MessageStop]
+    ↓ (agent executes tool)
+[ToolResult] { tool_use_id: "t-1", output: "fn login()...", is_error: false }
+    ↓ (agent calls LLM again with tool result)
+[TextDelta] "I found the bug. The session token"
+[TextDelta] " is not being validated. Let me fix it."
+[ToolUse]   { id: "t-2", name: "edit_file", input: { path: "src/auth.rs", ... } }
+[Usage]     { input: 401, output: 156, cache_creation: 0, cache_read: 245 }
+[MessageStop]
+    ↓ (agent executes tool)
+[ToolResult] { tool_use_id: "t-2", output: "Successfully edited", is_error: false }
+    ↓
+[TextDelta] "Fixed. The issue was..."
+[Usage]     { input: 580, output: 210, cache_creation: 0, cache_read: 401 }
+[MessageStop]
+    ↓ (no more tool calls → session complete)
+```
 
-A single session might involve 2-20 LLM API round-trips ("iterations"), each consuming tokens and calling 0-N tools.
-
-**Our simulator generates session-level events** -- one event per completed session, with aggregated token counts, tool usage, and cost. We chose session-level (not turn-level or streaming-level) because the dashboard only needs session aggregates.
+**Our simulator generates these individual streaming events** as rows in TimescaleDB. The transformer then aggregates them into dashboard-ready tables in PostgreSQL.
 
 ---
 
-## Layer 1: Raw Session Events (TimescaleDB)
+## Layer 1: Streaming Events (TimescaleDB)
 
-### Why TimescaleDB?
+### Why streaming-level granularity?
 
-Session events are time-series data: ordered by timestamp, queried by time range, and continuously appended. TimescaleDB's hypertable automatically partitions by time, making range queries fast regardless of total data volume. This is the source of truth for all raw event data.
+- **Matches real agent output exactly** -- when we connect to a real agent later, the data format is already right
+- **Enables future features**: session replay, per-tool analytics, latency analysis per iteration
+- **TUI input path**: users can inject events via terminal UI in the same format
+- **Faithful simulation**: we can validate that our pipeline handles real event shapes correctly
 
-### session_events (hypertable)
+### agent_events (hypertable)
+
+One row per streaming event. A typical session with 3 iterations and 5 tool calls produces ~20-30 rows.
 
 ```sql
-CREATE TABLE session_events (
-    id            TEXT          NOT NULL,
-    user_id       TEXT          NOT NULL,
-    team_id       TEXT          NOT NULL,
-    model         TEXT          NOT NULL,
-    status        TEXT          NOT NULL,
-    input_tokens  INTEGER       NOT NULL,
-    output_tokens INTEGER       NOT NULL,
-    cache_creation INTEGER      NOT NULL,
-    cache_read    INTEGER       NOT NULL,
-    cost          NUMERIC(12,6) NOT NULL,
-    tool_calls    INTEGER       NOT NULL,
-    tool_errors   INTEGER       NOT NULL,
-    error_category TEXT,
-    duration_ms   INTEGER       NOT NULL,
-    ts            TIMESTAMPTZ   NOT NULL,
-    PRIMARY KEY (id, ts)
+CREATE TABLE agent_events (
+    session_id  TEXT        NOT NULL,
+    seq         INTEGER     NOT NULL,
+    event_type  TEXT        NOT NULL,
+    payload     JSONB       NOT NULL,
+    ts          TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY (session_id, seq, ts)
 );
 
-SELECT create_hypertable('session_events', 'ts');
+SELECT create_hypertable('agent_events', 'ts');
 ```
 
-### Field-by-Field Explanation
-
-#### Identity & Attribution
+### Field-by-Field
 
 | Field | Type | Example | Purpose |
 |-------|------|---------|---------|
-| `id` | TEXT | `"sess-4217"` | Unique session identifier. Maps to the agent's `Session.id`. |
-| `user_id` | TEXT | `"user-123"` | The developer who ran the agent. Used for per-user analytics (cost attribution, activity tracking). |
-| `team_id` | TEXT | `"backend"` | The team the user belongs to. Primary grouping dimension for the dashboard -- team leaderboards, team budgets, team cost breakdown. |
-| `ts` | TIMESTAMPTZ | `2026-04-04T14:30:00Z` | When the session started. Part of the hypertable partition key. Every dashboard query filters on this. |
+| `session_id` | TEXT | `"sess-4217"` | Groups all events belonging to one agent session. |
+| `seq` | INTEGER | `0`, `1`, `2`, ... | Preserves event ordering within a session. Events may arrive at the same timestamp -- `seq` guarantees deterministic replay. |
+| `event_type` | TEXT | `"TextDelta"` | Discriminator for the `payload` JSONB. Matches the reference agent's `AssistantEvent` enum + extensions. |
+| `payload` | JSONB | `{"delta": "I'll check..."}` | Event-specific data. Schema depends on `event_type` (see below). |
+| `ts` | TIMESTAMPTZ | `2026-04-04T14:30:00.123Z` | When this event occurred. Millisecond precision for realistic streaming simulation. |
 
-#### Model & Status
+### Event Types and Payload Schemas
 
-| Field | Type | Values | Purpose |
-|-------|------|--------|---------|
-| `model` | TEXT | `haiku`, `sonnet`, `opus` | Which Claude model was used. Determines token pricing (haiku is 60x cheaper than opus). Critical for cost analysis -- dashboard shows cost breakdown by model. |
-| `status` | TEXT | `completed`, `error`, `cancelled` | How the session ended. `completed` = agent finished the task. `error` = agent hit an unrecoverable error. `cancelled` = user aborted. Drives the "completion rate" KPI. |
+These match the reference agent's event model from `conversation.rs` and `session.rs`:
 
-**Why these 3 statuses?** They map to the agent's session lifecycle:
-- `completed`: The conversation loop finished normally (no pending tool calls, final text response delivered)
-- `error`: A `RuntimeError`, `ApiError`, or unrecoverable `ToolError` terminated the session
-- `cancelled`: User sent SIGINT/cancelled during execution
+#### 1. `SessionStart`
 
-#### Token Usage (4 categories)
+Emitted once at the beginning of a session. Contains metadata not present in streaming events.
 
-The Claude API bills across 4 token types. Understanding these is essential for cost attribution:
+```json
+{
+  "userId": "user-123",
+  "teamId": "backend",
+  "model": "sonnet",
+  "permissionLevel": "WorkspaceWrite"
+}
+```
+
+| Field | Purpose |
+|-------|---------|
+| `userId` | Developer who started the session. Attribution for cost and activity tracking. |
+| `teamId` | Team the user belongs to. Primary grouping for dashboard. |
+| `model` | Which Claude model: `haiku`, `sonnet`, or `opus`. Determines token pricing. |
+| `permissionLevel` | Agent's permission mode: `ReadOnly`, `WorkspaceWrite`, or `DangerFullAccess`. Determines which tools are available. |
+
+**Why a separate event?** The Claude API streaming events (TextDelta, ToolUse, etc.) don't carry user/team/model metadata -- that's set at session creation time. We need it for aggregation.
+
+#### 2. `TextDelta`
+
+A chunk of text generated by the model. Multiple TextDeltas concatenate into a complete text block.
+
+```json
+{
+  "delta": "I'll investigate the login issue."
+}
+```
+
+| Field | Purpose |
+|-------|---------|
+| `delta` | Text fragment. In our structural-first approach, this is placeholder text like `"Agent response for task"`. Will be made realistic later. |
+
+**Reference agent source:** `AssistantEvent::TextDelta(String)` in `conversation.rs`
+
+#### 3. `ToolUse`
+
+The model requests to call a tool. Corresponds to a `ContentBlock::ToolUse` in the agent.
+
+```json
+{
+  "id": "t-1",
+  "name": "read_file",
+  "input": "{\"path\": \"src/auth.rs\", \"limit\": 100}"
+}
+```
+
+| Field | Purpose |
+|-------|---------|
+| `id` | Unique ID for this tool call. Links to the corresponding `ToolResult`. |
+| `name` | One of the 19 built-in tools (see reference). Determines permission level needed. |
+| `input` | JSON string of tool arguments. Schema depends on the tool (e.g., `bash` has `command`, `read_file` has `path`). |
+
+**19 available tools from reference agent:**
+
+| Permission | Tools |
+|------------|-------|
+| ReadOnly | `read_file`, `glob_search`, `grep_search`, `WebFetch`, `WebSearch`, `Skill`, `ToolSearch`, `Sleep`, `SendUserMessage`, `StructuredOutput` |
+| WorkspaceWrite | + `write_file`, `edit_file`, `TodoWrite`, `NotebookEdit`, `Config` |
+| DangerFullAccess | + `bash`, `PowerShell`, `REPL`, `Agent` |
+
+**Reference agent source:** `AssistantEvent::ToolUse { id, name, input }` in `conversation.rs`
+
+#### 4. `ToolResult`
+
+Result of executing a tool. Generated by the agent runtime (not the LLM API).
+
+```json
+{
+  "toolUseId": "t-1",
+  "toolName": "read_file",
+  "output": "fn login() { ... }",
+  "isError": false
+}
+```
+
+| Field | Purpose |
+|-------|---------|
+| `toolUseId` | References the `ToolUse.id` that triggered this execution. |
+| `toolName` | Which tool was called. Redundant with ToolUse but useful for direct queries. |
+| `output` | Tool execution output. Structural placeholder for now. |
+| `isError` | `true` if the tool failed. Counted as `tool_errors` in dashboard. |
+
+**Error scenarios the simulator should produce:**
+- `bash`: command not found, non-zero exit code, timeout
+- `read_file`: file not found, permission denied
+- `edit_file`: old_string not found in file
+- `write_file`: directory doesn't exist
+- Permission denied: tool requires higher permission level
+
+**Reference agent source:** `ContentBlock::ToolResult { tool_use_id, tool_name, output, is_error }` in `session.rs`
+
+#### 5. `Usage`
+
+Token consumption for one LLM API call. Emitted once per assistant message (per iteration).
+
+```json
+{
+  "inputTokens": 245,
+  "outputTokens": 89,
+  "cacheCreationInputTokens": 3200,
+  "cacheReadInputTokens": 0
+}
+```
 
 | Field | Type | Range | What It Measures |
 |-------|------|-------|-----------------|
-| `input_tokens` | INTEGER | 200-800 | Tokens sent TO the model (system prompt + conversation history + tool results). Grows with each iteration as context accumulates. |
-| `output_tokens` | INTEGER | 50-400 | Tokens generated BY the model (text responses + tool call arguments). The "thinking" cost. |
-| `cache_creation` | INTEGER | 0-500 | Tokens written to the prompt cache on first use. One-time cost per unique prompt prefix. Higher price than regular input. |
-| `cache_read` | INTEGER | 0-300 | Tokens read from prompt cache on subsequent calls. 10x cheaper than regular input. High cache_read = good cost efficiency. |
+| `inputTokens` | integer | 100-800 | Tokens sent TO the model. Grows each iteration as context accumulates. |
+| `outputTokens` | integer | 30-400 | Tokens generated BY the model. Text + tool call arguments. |
+| `cacheCreationInputTokens` | integer | 0-5000 | Tokens written to prompt cache. High on first call of a session (system prompt cached), low/zero on subsequent calls. |
+| `cacheReadInputTokens` | integer | 0-800 | Tokens read from cache instead of re-processing. Should be high on iterations 2+ (previous context cached). |
 
-**How these map to the reference agent:**
+**Cache behavior pattern in real agents:**
+- Iteration 1: High `cacheCreation` (system prompt + tools), zero `cacheRead`
+- Iteration 2+: Zero `cacheCreation`, increasing `cacheRead` (previous context cached)
+- The simulator should replicate this pattern for realistic cost calculations
 
-```
-Session.messages[] → for each message where role == "assistant":
-    message.usage.input_tokens           → summed into input_tokens
-    message.usage.output_tokens          → summed into output_tokens  
-    message.usage.cache_creation_input_tokens → summed into cache_creation
-    message.usage.cache_read_input_tokens    → summed into cache_read
-```
+**Reference agent source:** `AssistantEvent::Usage(TokenUsage)` in `conversation.rs`, `TokenUsage` struct in `session.rs`
 
-A session with 5 iterations would have 5 assistant messages, each with their own `TokenUsage`. We sum all 5 into the session-level totals.
+#### 6. `MessageStop`
 
-**Why cache metrics matter for the dashboard:**
-The "Cache Efficiency" view (`/costs/cache`) shows how well teams use prompt caching. Teams with high `cache_read / (cache_read + input_tokens)` ratios are spending less per session. This is an actionable optimization -- engineering leaders can identify teams that aren't leveraging caching.
+Marks the end of one assistant message. The model may produce multiple messages per turn if it calls tools.
 
-#### Cost
-
-| Field | Type | Example | Purpose |
-|-------|------|---------|---------|
-| `cost` | NUMERIC(12,6) | `0.003825` | Pre-computed USD cost of this session. Calculated at insert time using model-specific pricing. |
-
-**Formula:**
-```
-cost = (input_tokens  × model.input_price
-      + output_tokens × model.output_price
-      + cache_creation × model.cache_create_price
-      + cache_read    × model.cache_read_price) / 1,000,000
+```json
+{}
 ```
 
-**Model pricing (per 1M tokens) -- must match TypeScript exactly:**
+Empty payload. Its presence signals: "aggregate all preceding TextDelta/ToolUse events since the last MessageStop into one ConversationMessage."
 
-| Model | Input | Output | Cache Create | Cache Read |
-|-------|-------|--------|--------------|------------|
-| haiku | $0.25 | $1.25 | $0.30 | $0.03 |
-| sonnet | $3.00 | $15.00 | $3.75 | $0.30 |
-| opus | $15.00 | $75.00 | $18.75 | $1.50 |
+**Reference agent source:** `AssistantEvent::MessageStop` in `conversation.rs`
 
-**Why pre-compute cost?** Every dashboard endpoint needs cost data. Computing it on-the-fly from tokens × pricing for every query is wasteful. Pre-computing at insert time means aggregations are simple `SUM(cost)`.
+#### 7. `SessionEnd`
 
-#### Tool Usage
+Emitted once when the session completes. Contains final status.
 
-| Field | Type | Example | Purpose |
-|-------|------|---------|---------|
-| `tool_calls` | INTEGER | `12` | Total tools executed in this session. Maps to count of `ContentBlock::ToolUse` blocks across all assistant messages. |
-| `tool_errors` | INTEGER | `1` | Tools that returned `is_error: true`. Maps to count of `ContentBlock::ToolResult` blocks where `is_error == true`. |
-| `error_category` | TEXT (nullable) | `"tool"` | For sessions with `status = 'error'`, which category of error caused the failure. NULL for completed/cancelled sessions. |
-
-**Error categories map to the reference agent's error taxonomy:**
-
-| Category | Agent Error Types | Example |
-|----------|------------------|---------|
-| `api` | `AUTH_001-004`, `NET_001-004` | API key missing, rate limited, network timeout |
-| `tool` | `TOOL_001-002` | Unknown tool requested, bash command failed |
-| `permission` | `PERM_001-004` | Tool blocked by permission policy, hook denied |
-| `runtime` | `RUNTIME_001-003` | Max iterations exceeded, empty model response |
-
-**Why track tool errors separately from session errors?**
-- `tool_errors` = individual tool calls that failed but the session may have recovered (agent retried or worked around it)
-- `error_category` = the fatal error that killed the session
-- Dashboard uses `tool_errors / tool_calls` for the "tool error rate" KPI, and `error_category` counts for the quality breakdown chart
-
-#### Duration
-
-| Field | Type | Range | Purpose |
-|-------|------|-------|---------|
-| `duration_ms` | INTEGER | 5000-360000 | Wall-clock time from session start to end, in milliseconds. 5s = quick read-only question. 360s (6 min) = complex multi-file refactoring. Not currently displayed on dashboard but available for future latency analysis. |
-
-### Reference Tables
-
-```sql
-CREATE TABLE teams (
-    id   TEXT PRIMARY KEY,          -- e.g., "backend-alpha"
-    name TEXT NOT NULL UNIQUE       -- e.g., "Backend Alpha"
-);
-
-CREATE TABLE users (
-    id      TEXT PRIMARY KEY,       -- e.g., "user-42"
-    email   TEXT NOT NULL,          -- e.g., "alice.smith42@acme.com"
-    team_id TEXT NOT NULL REFERENCES teams(id)
-);
+```json
+{
+  "status": "completed",
+  "errorCode": null,
+  "errorCategory": null,
+  "durationMs": 45000
+}
 ```
 
-**Why separate tables?** Session events reference team/user by ID only. Team names and user emails are needed for display but shouldn't be denormalized into every event row.
+| Field | Values | Purpose |
+|-------|--------|---------|
+| `status` | `completed`, `error`, `cancelled` | How the session ended. |
+| `errorCode` | `null` or `"AUTH_001"`, `"TOOL_002"`, etc. | Specific error code from reference agent's error taxonomy. |
+| `errorCategory` | `null` or `api`, `tool`, `permission`, `runtime` | Broad category for dashboard aggregation. |
+| `durationMs` | 5000-360000 | Wall-clock session duration. |
+
+**Error code → category mapping:**
+
+| Error Codes | Category | Typical Cause |
+|-------------|----------|---------------|
+| `AUTH_001-004`, `NET_001-004` | `api` | API key missing, rate limited, network timeout |
+| `TOOL_001-002` | `tool` | Unknown tool, execution failure |
+| `PERM_001-004` | `permission` | Mode too restrictive, user denied escalation, hook blocked |
+| `RUNTIME_001-003` | `runtime` | Max iterations exceeded, empty response, stream terminated |
+
+### Event Sequence for a Typical Session
+
+A simple session with 2 iterations (1 tool call):
+
+```
+seq  event_type     payload summary
+───  ──────────     ───────────────
+0    SessionStart   { userId, teamId, model: "sonnet", permissionLevel }
+1    TextDelta      { delta: "I'll check the file." }
+2    ToolUse        { id: "t-1", name: "read_file", input: {...} }
+3    Usage          { input: 245, output: 89, cacheCreation: 3200, cacheRead: 0 }
+4    MessageStop    {}
+5    ToolResult     { toolUseId: "t-1", output: "...", isError: false }
+6    TextDelta      { delta: "The file contains..." }
+7    Usage          { input: 401, output: 156, cacheCreation: 0, cacheRead: 245 }
+8    MessageStop    {}
+9    SessionEnd     { status: "completed", durationMs: 12000 }
+```
+
+**Events per session estimate:**
+- Simple query (1 iteration, 0 tools): ~5 events
+- Typical session (2-4 iterations, 1-3 tools): ~15-25 events
+- Complex session (5+ iterations, 5+ tools): ~30-50 events
+- At 300 sessions/day: ~6,000-9,000 events/day, ~180K-270K events/30 days
+
+### A Complex Session Example
+
+Multi-tool session with an error recovery:
+
+```
+seq  event_type     payload
+───  ──────────     ───────
+0    SessionStart   { userId: "user-42", teamId: "backend", model: "opus", permissionLevel: "DangerFullAccess" }
+1    TextDelta      { delta: "I'll look at the test failures." }
+2    ToolUse        { id: "t-1", name: "bash", input: "{\"command\":\"cargo test\"}" }
+3    Usage          { input: 312, output: 145, cacheCreation: 4200, cacheRead: 0 }
+4    MessageStop    {}
+5    ToolResult     { toolUseId: "t-1", output: "3 tests failed...", isError: false }
+6    TextDelta      { delta: "Three tests failed. Let me read the failing test." }
+7    ToolUse        { id: "t-2", name: "read_file", input: "{\"path\":\"tests/auth_test.rs\"}" }
+8    ToolUse        { id: "t-3", name: "read_file", input: "{\"path\":\"src/auth.rs\"}" }
+9    Usage          { input: 580, output: 210, cacheCreation: 0, cacheRead: 312 }
+10   MessageStop    {}
+11   ToolResult     { toolUseId: "t-2", output: "...", isError: false }
+12   ToolResult     { toolUseId: "t-3", output: "...", isError: false }
+13   TextDelta      { delta: "Found the issue. Fixing now." }
+14   ToolUse        { id: "t-4", name: "edit_file", input: "{\"path\":\"src/auth.rs\",...}" }
+15   Usage          { input: 890, output: 178, cacheCreation: 0, cacheRead: 580 }
+16   MessageStop    {}
+17   ToolResult     { toolUseId: "t-4", output: "Successfully edited", isError: false }
+18   TextDelta      { delta: "Let me run the tests again." }
+19   ToolUse        { id: "t-5", name: "bash", input: "{\"command\":\"cargo test\"}" }
+20   Usage          { input: 1100, output: 95, cacheCreation: 0, cacheRead: 890 }
+21   MessageStop    {}
+22   ToolResult     { toolUseId: "t-5", output: "All 42 tests passed", isError: false }
+23   TextDelta      { delta: "All tests pass now. The fix was..." }
+24   Usage          { input: 1250, output: 340, cacheCreation: 0, cacheRead: 1100 }
+25   MessageStop    {}
+26   SessionEnd     { status: "completed", durationMs: 87000 }
+```
 
 ### Indexes
 
 ```sql
-CREATE INDEX idx_session_team  ON session_events (team_id, ts DESC);
-CREATE INDEX idx_session_user  ON session_events (user_id, ts DESC);
-CREATE INDEX idx_session_model ON session_events (model, ts DESC);
+CREATE INDEX idx_events_session ON agent_events (session_id, seq);
+CREATE INDEX idx_events_type    ON agent_events (event_type, ts DESC);
 ```
 
-Every API endpoint filters by `(time_range)` + optionally `(team_id | user_id | model)`. These composite indexes cover all query patterns. `ts DESC` ordering means recent-first queries (the common case) don't need a sort.
+### Reference Tables (in TimescaleDB)
+
+```sql
+CREATE TABLE teams (
+    id   TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE users (
+    id      TEXT PRIMARY KEY,
+    email   TEXT NOT NULL,
+    team_id TEXT NOT NULL REFERENCES teams(id)
+);
+```
 
 ---
 
 ## Layer 2: Kafka Messages
 
-### Topic: `session.events`
+### Topic: `agent.events`
 
-Every session event written to TimescaleDB is also published to Kafka. The Rust transformer consumes these messages and writes pre-aggregated data to PostgreSQL.
+Each agent event is published to Kafka as it's written to TimescaleDB.
 
-**Key:** `session_id` (ensures ordering per session)
-**Value:** Full session event as JSON
+**Key:** `session_id` (ensures all events for a session go to the same partition → ordering preserved)
+
+**Value:**
 
 ```json
 {
-  "id": "sess-4217",
-  "userId": "user-123",
-  "teamId": "backend",
-  "model": "sonnet",
-  "status": "completed",
-  "inputTokens": 450,
-  "outputTokens": 180,
-  "cacheCreation": 200,
-  "cacheRead": 150,
-  "cost": 0.003825,
-  "toolCalls": 8,
-  "toolErrors": 0,
-  "errorCategory": null,
-  "durationMs": 45000,
-  "timestamp": "2026-04-04T14:30:00Z"
+  "sessionId": "sess-4217",
+  "seq": 2,
+  "eventType": "ToolUse",
+  "payload": {
+    "id": "t-1",
+    "name": "read_file",
+    "input": "{\"path\": \"src/auth.rs\"}"
+  },
+  "timestamp": "2026-04-04T14:30:00.456Z"
 }
 ```
 
-**Why camelCase in Kafka?** Matches the TypeScript API response conventions. The Rust transformer reads these and writes to PostgreSQL in the format the TypeScript backend expects.
+**Why per-event messages (not per-session)?**
+- Real agents stream events -- the Kafka topic mirrors that
+- Transformer can process incrementally instead of waiting for session completion
+- Future: real-time dashboard updates as events arrive (not just on SessionEnd)
 
-**Why Kafka between TimescaleDB and PostgreSQL?**
-- **Decoupling:** Simulator writes at its own pace, transformer processes at its own pace
-- **Replay:** If the transformer has a bug or the PostgreSQL schema changes, replay the topic to reprocess
-- **Backpressure:** Kafka buffers events if the transformer is slow
+### Consumer Group: `zendash-transformer`
+
+The transformer consumes all events, buffers per session_id, and on `SessionEnd`:
+1. Aggregates all events for that session into session-level metrics
+2. Updates daily baked tables in PostgreSQL
+3. Checks alert conditions
 
 ---
 
 ## Layer 3: Baked Data (PostgreSQL)
 
-These tables are the Rust transformer's output. Each table is designed so that the TypeScript backend can serve an API endpoint with a simple `SELECT` + optional `WHERE` -- no joins, no aggregation, no computation.
+The transformer aggregates streaming events into per-endpoint tables. TypeScript does simple `SELECT` queries.
 
-### budget_config (writable by TypeScript)
+### How the transformer aggregates events → session metrics
+
+```
+For each completed session (SessionEnd received):
+
+1. Read SessionStart → extract userId, teamId, model
+2. Read SessionEnd → extract status, errorCategory, durationMs
+3. Count ToolUse events → tool_calls
+4. Count ToolResult events where isError=true → tool_errors
+5. Sum all Usage events:
+   - SUM(inputTokens) → total input tokens
+   - SUM(outputTokens) → total output tokens
+   - SUM(cacheCreationInputTokens) → total cache creation
+   - SUM(cacheReadInputTokens) → total cache read
+6. Apply pricing formula → cost
+7. Count MessageStop events → iterations (API round-trips)
+```
+
+### budget_config
+
+Only table TypeScript writes to (via `POST /api/budgets`).
 
 ```sql
 CREATE TABLE budget_config (
@@ -232,101 +396,46 @@ CREATE TABLE budget_config (
 );
 ```
 
-| Field | Purpose |
-|-------|---------|
-| `id = 1` | Singleton row. CHECK constraint ensures only one config exists. |
-| `monthly_budget` | Organization-wide monthly budget in USD. Default $6,000. |
-| `thresholds` | Percentage thresholds that trigger alerts: [50%, 75%, 90%, 100%]. |
-| `team_overrides` | Per-team budget overrides as `{"team-id": amount}`. Teams not listed get auto-distributed budget: `(monthly_budget - sum(overrides)) / remaining_team_count`. |
-
-**This is the only table TypeScript writes to** (via `POST /api/budgets`). All other tables are read-only from TypeScript's perspective.
-
 ### daily_session_summary
 
-**Serves:** `GET /api/sessions/summary`, session part of `GET /api/overview/live`
+Serves: `GET /api/sessions/summary`, session part of `GET /api/overview/live`
 
 ```sql
 CREATE TABLE daily_session_summary (
-    date          DATE    NOT NULL,
-    team_id       TEXT    NOT NULL,
-    model         TEXT    NOT NULL,
-    total_sessions INTEGER NOT NULL,
-    completed     INTEGER NOT NULL,
-    errored       INTEGER NOT NULL,
-    cancelled     INTEGER NOT NULL,
-    total_cost    NUMERIC(12,6) NOT NULL,
-    active_users  INTEGER NOT NULL,
+    date           DATE          NOT NULL,
+    team_id        TEXT          NOT NULL,
+    model          TEXT          NOT NULL,
+    total_sessions INTEGER       NOT NULL,
+    completed      INTEGER       NOT NULL,
+    errored        INTEGER       NOT NULL,
+    cancelled      INTEGER       NOT NULL,
+    total_cost     NUMERIC(12,6) NOT NULL,
+    active_users   INTEGER       NOT NULL,
     PRIMARY KEY (date, team_id, model)
 );
 ```
 
-| Field | Purpose | Dashboard Usage |
-|-------|---------|-----------------|
-| `date` | Calendar day | X-axis of trend charts |
-| `team_id` | Team grouping | Filter: `WHERE team_id = ?` |
-| `model` | Model grouping | Filter: `WHERE model = ?` |
-| `total_sessions` | Sessions that day for this team+model | SUM for "Total Sessions" KPI |
-| `completed` | Sessions with `status = 'completed'` | Completion rate = `SUM(completed) / SUM(total_sessions)` |
-| `errored` | Sessions with `status = 'error'` | Daily trend chart (red bars) |
-| `cancelled` | Sessions with `status = 'cancelled'` | Daily trend chart (grey bars) |
-| `total_cost` | Sum of all session costs | "Total Cost" KPI, cost trend chart |
-| `active_users` | Distinct users who had sessions | "Active Users" KPI, adoption rate |
-
-**TypeScript query example for `/api/sessions/summary`:**
-```sql
-SELECT date, SUM(total_sessions), SUM(completed), SUM(errored), SUM(cancelled),
-       SUM(total_cost), SUM(active_users)
-FROM daily_session_summary
-WHERE date >= $cutoff
-  AND ($team_id IS NULL OR team_id = $team_id)
-  AND ($model IS NULL OR model = $model)
-GROUP BY date
-ORDER BY date
-```
-
 ### daily_token_stats
 
-**Serves:** `GET /api/costs/breakdown`, `GET /api/costs/cache`
+Serves: `GET /api/costs/breakdown`, `GET /api/costs/cache`
 
 ```sql
 CREATE TABLE daily_token_stats (
-    date           DATE    NOT NULL,
-    team_id        TEXT    NOT NULL,
-    model          TEXT    NOT NULL,
-    input_tokens   BIGINT  NOT NULL,
-    output_tokens  BIGINT  NOT NULL,
-    cache_creation BIGINT  NOT NULL,
-    cache_read     BIGINT  NOT NULL,
+    date           DATE          NOT NULL,
+    team_id        TEXT          NOT NULL,
+    model          TEXT          NOT NULL,
+    input_tokens   BIGINT        NOT NULL,
+    output_tokens  BIGINT        NOT NULL,
+    cache_creation BIGINT        NOT NULL,
+    cache_read     BIGINT        NOT NULL,
     total_cost     NUMERIC(12,6) NOT NULL,
     PRIMARY KEY (date, team_id, model)
 );
 ```
 
-| Field | Purpose | Dashboard Usage |
-|-------|---------|-----------------|
-| `input_tokens` | Total input tokens for this day/team/model | Token breakdown chart, cost-by-token-type |
-| `output_tokens` | Total output tokens | Token breakdown chart |
-| `cache_creation` | Total cache creation tokens | Cache efficiency metrics |
-| `cache_read` | Total cache read tokens | Cache hit rate = `cache_read / (cache_read + input_tokens)` |
-| `total_cost` | Redundant with session summary but useful for cost-only queries | Cost breakdown by team, by model |
-
-**Why BIGINT for tokens?** A single session has 200-800 input tokens, but aggregated daily across 1000 teams, totals can reach millions. INTEGER (max 2.1B) would technically suffice for our scale but BIGINT is safer for future growth.
-
-**Cache hit rate formula:**
-```
-cache_hit_rate = SUM(cache_read) / (SUM(cache_read) + SUM(input_tokens))
-```
-A rate of 0.35 means 35% of input tokens came from cache (cheaper). The `/costs/cache` endpoint reports this org-wide and per-team.
-
-**Cache savings formula:**
-```
-savings = SUM(cache_read) * (model.input_price - model.cache_read_price) / 1_000_000
-```
-This is how much money was saved by cache hits vs. paying full input price.
-
 ### daily_quality_stats
 
-**Serves:** `GET /api/quality/tier1`
+Serves: `GET /api/quality/tier1`
 
 ```sql
 CREATE TABLE daily_quality_stats (
@@ -345,21 +454,9 @@ CREATE TABLE daily_quality_stats (
 );
 ```
 
-| Field | Purpose | Dashboard Usage |
-|-------|---------|-----------------|
-| `completed` | Successful sessions | `sessionSuccessRate = completed / total_sessions` |
-| `tool_calls` | Total tool invocations | Denominator for tool error rate |
-| `tool_errors` | Failed tool invocations | `toolErrorRate = tool_errors / tool_calls` |
-| `errors_api` | Sessions killed by API errors | Error breakdown pie chart |
-| `errors_tool` | Sessions killed by tool errors | Error breakdown pie chart |
-| `errors_permission` | Sessions killed by permission denials | Error breakdown pie chart |
-| `errors_runtime` | Sessions killed by runtime errors | Error breakdown pie chart |
-
-**`retryableRecoveryRate`** is hardcoded at 0.60 in both TypeScript and Rust. It represents the estimated percentage of retryable errors that the agent successfully recovers from. This is a placeholder for future real tracking.
-
 ### team_user_stats
 
-**Serves:** `GET /api/teams/:id/users`
+Serves: `GET /api/teams/:id/users`
 
 ```sql
 CREATE TABLE team_user_stats (
@@ -374,20 +471,9 @@ CREATE TABLE team_user_stats (
 );
 ```
 
-| Field | Purpose | Dashboard Usage |
-|-------|---------|-----------------|
-| `user_id` | User reference | JOIN with `users` table for email |
-| `team_id` | Team reference | Filter: `WHERE team_id = ?` |
-| `sessions` | Sessions this user ran today | SUM for user's total sessions |
-| `cost` | User's total cost today | SUM for user's total cost |
-| `completed` | User's completed sessions today | `completionRate = SUM(completed) / SUM(sessions)` |
-| `last_active` | Most recent session timestamp | Displayed as "Last Active" in user table |
-
-**Why per-user per-day instead of per-user aggregate?** Time range filtering. When the dashboard shows "last 7 days", we need `SUM(sessions) WHERE date >= 7_days_ago`, not an all-time aggregate.
-
 ### alerts_log
 
-**Serves:** `GET /api/alerts`
+Serves: `GET /api/alerts`
 
 ```sql
 CREATE TABLE alerts_log (
@@ -401,128 +487,151 @@ CREATE TABLE alerts_log (
 );
 ```
 
-| Field | Values | Purpose |
-|-------|--------|---------|
-| `type` | `budget_exceeded`, `threshold_reached`, `spend_spike`, `anomaly` | Alert classification |
-| `severity` | `error`, `warning`, `info` | Visual urgency in dashboard |
-| `team_id` | nullable | `NULL` = org-wide alert, set = team-specific alert |
-
-**Alert generation rules** (computed by Rust transformer):
-
-1. **`threshold_reached`**: When org spend crosses a configured threshold (50%, 75%, 90%, 100% of budget)
-   - 50% → severity `info`
-   - 75%, 90% → severity `warning`  
-   - 100% → severity `error`
-
-2. **`budget_exceeded`**: When a specific team exceeds its budget override
-   - Always severity `error`
-
-3. **`spend_spike`**: When a team's daily spend exceeds 2x its 7-day average
-   - Always severity `warning`
-   - Includes percentage above average in description
-
 ### teams & users (copied from TimescaleDB)
 
 ```sql
-CREATE TABLE teams (
-    id   TEXT PRIMARY KEY,
-    name TEXT NOT NULL UNIQUE
-);
-
-CREATE TABLE users (
-    id      TEXT PRIMARY KEY,
-    email   TEXT NOT NULL,
-    team_id TEXT NOT NULL REFERENCES teams(id)
-);
-```
-
-Copied by the transformer during initial setup. Needed for JOINs to get team names and user emails.
-
----
-
-## Mapping: Reference Agent Internals to Our Data
-
-### Session → session_event
-
-```
-Reference Agent Session                    Our session_event
-─────────────────────────                  ──────────────────
-Session.id                          →      id
-(from user context)                 →      user_id, team_id
-(from API request)                  →      model
-(derived from session lifecycle)    →      status
-                                    
-Session.messages[]                  
-  .filter(role == "assistant")      
-  .map(m => m.usage)                
-  .reduce(sum)                      →      input_tokens, output_tokens,
-                                           cache_creation, cache_read
-                                    
-(pricing formula applied)           →      cost
-                                    
-Session.messages[]                  
-  .filter(role == "assistant")      
-  .flatMap(m => m.blocks)           
-  .filter(b => b.type == "tool_use")
-  .count()                          →      tool_calls
-                                    
-Session.messages[]                  
-  .filter(role == "tool")           
-  .flatMap(m => m.blocks)           
-  .filter(b => b.is_error == true)  
-  .count()                          →      tool_errors
-                                    
-(from error that terminated session)→      error_category
-(wall clock: start to finish)       →      duration_ms
-(session start time)                →      ts
-```
-
-### TurnSummary → aggregated into session_event
-
-A real session may have multiple turns. The TurnSummary from each turn contributes:
-
-```
-TurnSummary.usage.input_tokens              → added to session input_tokens
-TurnSummary.usage.output_tokens             → added to session output_tokens
-TurnSummary.usage.cache_creation_input_tokens → added to session cache_creation
-TurnSummary.usage.cache_read_input_tokens   → added to session cache_read
-TurnSummary.iterations                      → (not stored, could add later)
-TurnSummary.tool_results.filter(is_error)   → added to session tool_errors
-TurnSummary.tool_results.length             → added to session tool_calls
-```
-
-### Error Code → error_category mapping
-
-```
-AUTH_001..AUTH_004, NET_001..NET_004  →  "api"
-TOOL_001..TOOL_002                   →  "tool"  
-PERM_001..PERM_004                   →  "permission"
-RUNTIME_001..RUNTIME_003             →  "runtime"
-SESSION_*, MCP_*, PLUGIN_*, CONFIG_* →  (not tracked as session errors,
-                                         these are infrastructure issues)
+CREATE TABLE teams (id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE);
+CREATE TABLE users (id TEXT PRIMARY KEY, email TEXT NOT NULL, team_id TEXT NOT NULL REFERENCES teams(id));
 ```
 
 ---
 
-## Simulator: Generation Parameters
+## Simulator: Event Generation
 
-The simulator replicates the TypeScript mock generator's distributions:
+### Session simulation algorithm
+
+For each simulated session:
+
+1. **Pick metadata:** random user → team, weighted model, weighted status
+2. **Decide session shape:**
+   - `iterations` = 1-6 (weighted: 2-3 most common)
+   - `tools_per_iteration` = 0-3 (weighted: 1 most common)
+   - `tool_error_chance` = 10% per tool call
+3. **Generate event sequence:**
+
+```
+emit SessionStart { userId, teamId, model, permissionLevel }
+
+for iteration in 1..=iterations:
+    emit 1-3 TextDelta events (placeholder text)
+
+    for tool in 1..=tools_this_iteration:
+        pick tool name (weighted by real-world frequency)
+        emit ToolUse { id, name, input }
+
+    emit Usage {
+        inputTokens: grows with iteration (context accumulates)
+        outputTokens: 30-400
+        cacheCreation: high on iteration 1, zero after
+        cacheRead: zero on iteration 1, grows after
+    }
+    emit MessageStop
+
+    for each tool used this iteration:
+        emit ToolResult { toolUseId, output, isError: 10% chance }
+
+emit SessionEnd { status, errorCode, errorCategory, durationMs }
+```
+
+4. **Token growth pattern** (realistic cache behavior):
+   - Iteration 1: `inputTokens = 150-400`, `cacheCreation = 2000-5000`, `cacheRead = 0`
+   - Iteration N: `inputTokens ≈ prev_input + prev_output + tool_result_size`, `cacheCreation = 0`, `cacheRead ≈ prev_input`
+
+### Tool distribution
+
+| Tool | Weight | Typical Session Role |
+|------|--------|---------------------|
+| `read_file` | 30% | Most common -- agent reads code before changes |
+| `bash` | 20% | Running tests, builds, git commands |
+| `edit_file` | 15% | Making code changes |
+| `grep_search` | 12% | Searching codebase |
+| `glob_search` | 8% | Finding files |
+| `write_file` | 5% | Creating new files |
+| `WebFetch` | 3% | Checking docs |
+| `WebSearch` | 2% | Researching solutions |
+| Others | 5% | TodoWrite, Agent, etc. |
+
+### Error simulation
+
+10% of sessions end with `status: "error"`. The simulator picks a random error from the reference agent's error taxonomy. Each error has a code, category, and severity -- the simulator should produce a realistic distribution.
+
+**Error distribution for errored sessions:**
+
+| Category | Weight | Error Codes | Example Scenario |
+|----------|--------|-------------|------------------|
+| `api` | 40% | `AUTH_001`, `AUTH_002`, `AUTH_003`, `NET_001`, `NET_002`, `NET_003` | API key expired, rate limited, network timeout, retries exhausted |
+| `tool` | 30% | `TOOL_001`, `TOOL_002` | Unknown tool requested, bash command failed, file not found |
+| `permission` | 15% | `PERM_001`, `PERM_002`, `PERM_003` | Tool blocked by permission policy, user denied escalation |
+| `runtime` | 15% | `RUNTIME_001`, `RUNTIME_002`, `RUNTIME_003` | Max iterations exceeded, empty model response, stream terminated |
+
+**How errors affect the event sequence:**
+
+1. **API errors** (`AUTH_*`, `NET_*`) — Session may die early. Fewer iterations than planned. Example: session starts, 1 iteration completes, then `SessionEnd { status: "error", errorCode: "NET_001", errorCategory: "api" }`.
+
+2. **Tool errors** (`TOOL_*`) — A `ToolResult { isError: true }` occurs, and the agent may fail to recover. The session continues for 1-2 more iterations trying to fix the issue, then gives up. The fatal `TOOL_002` in `SessionEnd` is distinct from the per-tool `isError` flag (which counts individual tool failures the agent survived).
+
+3. **Permission errors** (`PERM_*`) — A tool call is denied. `ToolResult { isError: true, output: "permission denied: tool 'bash' requires danger-full-access" }`. Session ends after 1-2 retries.
+
+4. **Runtime errors** (`RUNTIME_*`) — `RUNTIME_001` (max iterations): session produces many iterations (5-6) then dies. `RUNTIME_002`/`RUNTIME_003`: session dies mid-iteration with fewer events.
+
+**Cancelled sessions (5%):**
+
+Cancelled sessions have `SessionEnd { status: "cancelled" }` with no error code. They represent the user pressing Ctrl+C mid-session. The event sequence is truncated -- fewer iterations than a completed session would have.
+
+**Error code reference** (from `docs/reference-agent/errors-in-example-agent.md`):
+
+| Code | Type | Retryable | Description |
+|------|------|-----------|-------------|
+| `AUTH_001` | MissingCredentials | No | No API key configured |
+| `AUTH_002` | ExpiredOAuthToken | No | OAuth token expired |
+| `AUTH_003` | Auth | No | General auth failure |
+| `NET_001` | Http | Yes | Network connectivity error |
+| `NET_002` | RetriesExhausted | No | Max retries hit |
+| `NET_003` | InvalidSseFrame | Yes | Malformed SSE stream |
+| `TOOL_001` | UnknownTool | No | Tool not found in registry |
+| `TOOL_002` | ExecutionFailed | Depends | Tool execution error (bash, read, edit) |
+| `PERM_001` | ModeDenied | No | Mode too restrictive for tool |
+| `PERM_002` | EscalationDenied | No | User denied permission escalation |
+| `PERM_003` | HookDenied | No | Pre-hook blocked tool execution |
+| `RUNTIME_001` | MaxIterations | No | Too many tool call loops |
+| `RUNTIME_002` | StreamEnded | Yes | Stream terminated without MessageStop |
+| `RUNTIME_003` | NoContent | Yes | Model returned empty response |
+
+### Generation parameters
 
 | Parameter | Value | Source |
 |-----------|-------|--------|
-| Teams | 1000 | `TEAM_COUNT` env var or default |
-| Users per team | 2-5 (uniform random) | ~3500 total users |
+| Teams | 1000 (configurable) | Matches TypeScript mock |
+| Users per team | 2-5 (uniform) | ~3500 total |
 | Sessions per day | 300 +/- 20 | 30 days = ~9000 sessions |
-| Model distribution | haiku 60%, sonnet 30%, opus 10% | Weighted random |
-| Status distribution | completed 85%, error 10%, cancelled 5% | Weighted random |
-| Input tokens | 200-800 (uniform) | Per session |
-| Output tokens | 50-400 (uniform) | Per session |
-| Cache creation | 0-500 (uniform) | Per session |
-| Cache read | 0-300 (uniform) | Per session |
-| Tool calls | 5-20 (uniform) | Per session |
-| Tool errors | 0 (90%) or 1-3 (10%) | Per session |
-| Session hours | 8:00-20:00 (working hours) | Random within day |
-| Duration | 5,000-360,000 ms | Per session |
-| Error category | Uniform pick from 4 categories | Only when status = 'error' |
-| Team names | `{PREFIX} {SUFFIX}` from predefined lists | 42 prefixes, 24 suffixes |
-| User emails | `{first}.{last}{id}@acme.com` | 10 first names, 10 last names |
+| Events per session | ~5-50 | ~180K-270K total events |
+| Model distribution | haiku 60%, sonnet 30%, opus 10% | Weighted |
+| Status distribution | completed 85%, error 10%, cancelled 5% | Weighted |
+| Error category distribution | api 40%, tool 30%, permission 15%, runtime 15% | Among errored sessions |
+| Iterations per session | 1-6 (weighted toward 2-3) | |
+| Tools per iteration | 0-3 (weighted toward 1) | |
+| Tool error rate | 10% per call | Individual tool failures (non-fatal) |
+
+### Model Pricing (per 1M tokens)
+
+Must match TypeScript exactly:
+
+| Model | Input | Output | Cache Create | Cache Read |
+|-------|-------|--------|--------------|------------|
+| haiku | $0.25 | $1.25 | $0.30 | $0.03 |
+| sonnet | $3.00 | $15.00 | $3.75 | $0.30 |
+| opus | $15.00 | $75.00 | $18.75 | $1.50 |
+
+---
+
+## Future: TUI Input Path
+
+The streaming event format is designed so that a TUI can inject events into the same pipeline:
+
+```
+TUI (manual input)  ─┐
+                      ├──→ TimescaleDB ──→ Kafka ──→ Transformer ──→ PostgreSQL
+Simulator (auto)    ─┘
+```
+
+The TUI would let a user manually create sessions by setting metadata, selecting tools, and entering results. Events flow through the same `agent_events` table and Kafka topic regardless of source.

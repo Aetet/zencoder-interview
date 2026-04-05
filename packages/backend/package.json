@@ -15,8 +15,11 @@
   "dependencies": {
     "@hono/node-server": "^1.14.0",
     "@hono/zod-validator": "^0.7.6",
+    "@types/pg": "^8.20.0",
     "@zendash/shared": "workspace:*",
     "hono": "^4.7.0",
+    "pg": "^8.20.0",
+    "zapatos": "^6.6.1",
     "zod": "^4.3.6"
   },
   "devDependencies": {

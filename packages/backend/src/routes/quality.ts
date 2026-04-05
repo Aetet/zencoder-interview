@@ -1,39 +1,47 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { filterQuerySchema } from '@zendash/shared/schemas'
-import { filterSessions } from '../mock/store.js'
+import { pool, buildFilters, num } from '../db.js'
 import type { QualityTier1 } from '@zendash/shared'
 
+const RETRYABLE_RECOVERY_RATE = 0.60
+
 export const quality = new Hono()
-  .get('/tier1', zValidator('query', filterQuerySchema), (c) => {
+  .get('/tier1', zValidator('query', filterQuerySchema), async (c) => {
     const { range, team_id, model } = c.req.valid('query')
-    const params = { range: range ?? '30d', team_id, model }
+    const f = buildFilters({ range: range ?? '30d', team_id, model })
 
-    const filtered = filterSessions(params)
-    const completed = filtered.filter((s) => s.status === 'completed')
-    const errored = filtered.filter((s) => s.status === 'error')
+    const result = await pool.query(
+      `SELECT
+        COALESCE(SUM(total_sessions), 0) AS total,
+        COALESCE(SUM(completed), 0) AS completed,
+        COALESCE(SUM(tool_calls), 0) AS tool_calls,
+        COALESCE(SUM(tool_errors), 0) AS tool_errors,
+        COALESCE(SUM(errors_api), 0) AS errors_api,
+        COALESCE(SUM(errors_tool), 0) AS errors_tool,
+        COALESCE(SUM(errors_permission), 0) AS errors_permission,
+        COALESCE(SUM(errors_runtime), 0) AS errors_runtime
+      FROM daily_quality_stats ${f.where}`,
+      f.params,
+    )
 
-    const errorsByCategory: Record<string, number> = { api: 0, tool: 0, permission: 0, runtime: 0 }
-    for (const s of errored) {
-      if (s.errorCategory) {
-        errorsByCategory[s.errorCategory] = (errorsByCategory[s.errorCategory] ?? 0) + 1
-      }
+    const r = result.rows[0]
+    const total = num(r.total)
+    const completed = num(r.completed)
+    const toolCalls = num(r.tool_calls)
+    const toolErrors = num(r.tool_errors)
+
+    const data: QualityTier1 = {
+      sessionSuccessRate: total > 0 ? completed / total : 0,
+      errorsByCategory: {
+        api: num(r.errors_api),
+        tool: num(r.errors_tool),
+        permission: num(r.errors_permission),
+        runtime: num(r.errors_runtime),
+      },
+      toolErrorRate: toolCalls > 0 ? toolErrors / toolCalls : 0,
+      retryableRecoveryRate: RETRYABLE_RECOVERY_RATE,
     }
 
-    const totalToolCalls = filtered.reduce((s, x) => s + x.toolCalls, 0)
-    const totalToolErrors = filtered.reduce((s, x) => s + x.toolErrors, 0)
-
-    const retryableSessions = errored.filter((s) => s.errorCategory === 'api' || s.errorCategory === 'runtime')
-    const recoveredSessions = retryableSessions.length > 0
-      ? Math.round(retryableSessions.length * 0.6)
-      : 0
-
-    const result: QualityTier1 = {
-      sessionSuccessRate: filtered.length > 0 ? completed.length / filtered.length : 0,
-      errorsByCategory,
-      toolErrorRate: totalToolCalls > 0 ? totalToolErrors / totalToolCalls : 0,
-      retryableRecoveryRate: retryableSessions.length > 0 ? recoveredSessions / retryableSessions.length : 0,
-    }
-
-    return c.json(result)
+    return c.json(data)
   })

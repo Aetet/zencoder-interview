@@ -144,9 +144,10 @@ export const overviewRoute = reatomRoute({
     else startLive()
   }, "overview.toggleLive")
 
-  // Stop live mode when navigating away from overview
+  // Auto-start live mode when entering overview, stop when leaving
   route.match.extend(
     withChangeHook(isMatch => {
+      if (isMatch && !isLive()) startLive()
       if (!isMatch && isLive()) stopLive()
     }),
   )

@@ -1,177 +1,208 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { filterQuerySchema } from '@zendash/shared/schemas'
-import { store, filterSessions } from '../mock/store.js'
-import { MODEL_PRICING } from '../mock/pricing.js'
+import { pool, buildFilters, r2, num } from '../db.js'
 import type { CostBreakdown, CacheData, BudgetData } from '@zendash/shared'
 
-export const costs = new Hono()
-  .get('/breakdown', zValidator('query', filterQuerySchema), (c) => {
-    const { range, team_id, user_id, model } = c.req.valid('query')
-    const params = { range: range ?? '30d', team_id, user_id, model }
+const MODEL_PRICING: Record<string, { input: number; output: number; cacheCreate: number; cacheRead: number }> = {
+  haiku:  { input: 0.25,  output: 1.25,  cacheCreate: 0.30,  cacheRead: 0.03 },
+  sonnet: { input: 3.00,  output: 15.00, cacheCreate: 3.75,  cacheRead: 0.30 },
+  opus:   { input: 15.00, output: 75.00, cacheCreate: 18.75, cacheRead: 1.50 },
+}
 
-    const filtered = filterSessions(params)
-    const totalCost = filtered.reduce((sum, s) => sum + s.cost, 0)
-    const completed = filtered.filter((s) => s.status === 'completed')
+export const costs = new Hono()
+  .get('/breakdown', zValidator('query', filterQuerySchema), async (c) => {
+    const { range, team_id, user_id, model } = c.req.valid('query')
+    const f = buildFilters({ range: range ?? '30d', team_id, model })
+
+    // Total cost
+    const totalResult = await pool.query(
+      `SELECT COALESCE(SUM(total_cost), 0) AS total FROM daily_token_stats ${f.where}`,
+      f.params,
+    )
+    const total = num(totalResult.rows[0].total)
 
     // By team
-    const teamCosts = new Map<string, number>()
-    for (const s of filtered) {
-      teamCosts.set(s.teamId, (teamCosts.get(s.teamId) ?? 0) + s.cost)
-    }
-    const byTeam = store.teams.map((t) => ({
-      teamId: t.id,
-      teamName: t.name,
-      cost: Math.round((teamCosts.get(t.id) ?? 0) * 100) / 100,
+    const byTeamResult = await pool.query(
+      `SELECT dts.team_id, t.name AS team_name, SUM(dts.total_cost) AS cost
+       FROM daily_token_stats dts JOIN teams t ON t.id = dts.team_id
+       ${f.where} GROUP BY dts.team_id, t.name ORDER BY cost DESC`,
+      f.params,
+    )
+    const byTeam = byTeamResult.rows.map((r) => ({
+      teamId: r.team_id as string,
+      teamName: r.team_name as string,
+      cost: r2(num(r.cost)),
     }))
 
     // By model
-    const modelCosts = new Map<string, number>()
-    for (const s of filtered) {
-      modelCosts.set(s.model, (modelCosts.get(s.model) ?? 0) + s.cost)
-    }
-    const byModel = Array.from(modelCosts.entries()).map(([model, cost]) => ({
-      model,
-      cost: Math.round(cost * 100) / 100,
+    const byModelResult = await pool.query(
+      `SELECT model, SUM(total_cost) AS cost
+       FROM daily_token_stats ${f.where} GROUP BY model`,
+      f.params,
+    )
+    const byModel = byModelResult.rows.map((r) => ({
+      model: r.model as string,
+      cost: r2(num(r.cost)),
     }))
 
-    // By token type
-    let inputTotal = 0, outputTotal = 0, cacheCreateTotal = 0, cacheReadTotal = 0
-    for (const s of filtered) {
-      const p = MODEL_PRICING[s.model]
-      inputTotal += (s.inputTokens * p.input) / 1_000_000
-      outputTotal += (s.outputTokens * p.output) / 1_000_000
-      cacheCreateTotal += (s.cacheCreation * p.cacheCreate) / 1_000_000
-      cacheReadTotal += (s.cacheRead * p.cacheRead) / 1_000_000
+    // Token totals per model for by-token-type breakdown
+    const tokenResult = await pool.query(
+      `SELECT model, SUM(input_tokens) AS input, SUM(output_tokens) AS output,
+              SUM(cache_creation) AS cache_c, SUM(cache_read) AS cache_r
+       FROM daily_token_stats ${f.where} GROUP BY model`,
+      f.params,
+    )
+    let inputCost = 0, outputCost = 0, cacheCreateCost = 0, cacheReadCost = 0
+    for (const r of tokenResult.rows) {
+      const p = MODEL_PRICING[r.model as string] ?? MODEL_PRICING.sonnet
+      inputCost += num(r.input) * p.input / 1_000_000
+      outputCost += num(r.output) * p.output / 1_000_000
+      cacheCreateCost += num(r.cache_c) * p.cacheCreate / 1_000_000
+      cacheReadCost += num(r.cache_r) * p.cacheRead / 1_000_000
     }
 
-    // Daily token trend
-    const dayTokens = new Map<string, { input: number; output: number; cacheCreation: number; cacheRead: number }>()
-    for (const s of filtered) {
-      const date = s.timestamp.slice(0, 10)
-      const p = MODEL_PRICING[s.model]
-      const entry = dayTokens.get(date) ?? { input: 0, output: 0, cacheCreation: 0, cacheRead: 0 }
-      entry.input += (s.inputTokens * p.input) / 1_000_000
-      entry.output += (s.outputTokens * p.output) / 1_000_000
-      entry.cacheCreation += (s.cacheCreation * p.cacheCreate) / 1_000_000
-      entry.cacheRead += (s.cacheRead * p.cacheRead) / 1_000_000
-      dayTokens.set(date, entry)
+    // Daily token trend (cost per token type per day)
+    const dailyResult = await pool.query(
+      `SELECT date, model, SUM(input_tokens) AS input, SUM(output_tokens) AS output,
+              SUM(cache_creation) AS cache_c, SUM(cache_read) AS cache_r
+       FROM daily_token_stats ${f.where} GROUP BY date, model ORDER BY date`,
+      f.params,
+    )
+    const dayMap = new Map<string, { input: number; output: number; cacheCreation: number; cacheRead: number }>()
+    for (const r of dailyResult.rows) {
+      const date = (r.date as Date).toISOString().slice(0, 10)
+      const p = MODEL_PRICING[r.model as string] ?? MODEL_PRICING.sonnet
+      const e = dayMap.get(date) ?? { input: 0, output: 0, cacheCreation: 0, cacheRead: 0 }
+      e.input += num(r.input) * p.input / 1_000_000
+      e.output += num(r.output) * p.output / 1_000_000
+      e.cacheCreation += num(r.cache_c) * p.cacheCreate / 1_000_000
+      e.cacheRead += num(r.cache_r) * p.cacheRead / 1_000_000
+      dayMap.set(date, e)
     }
+    const tokenTrend = Array.from(dayMap.entries())
+      .map(([date, t]) => ({ date, input: r2(t.input), output: r2(t.output), cacheCreation: r2(t.cacheCreation), cacheRead: r2(t.cacheRead) }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+
+    // Completed session count for costPerSession
+    const sessResult = await pool.query(
+      `SELECT COALESCE(SUM(completed), 0) AS cnt FROM daily_session_summary ${f.where}`,
+      f.params,
+    )
+    const completedCount = num(sessResult.rows[0].cnt)
 
     const result: CostBreakdown = {
-      total: Math.round(totalCost * 100) / 100,
+      total: r2(total),
       byTeam,
       byModel,
-      byTokenType: {
-        input: Math.round(inputTotal * 100) / 100,
-        output: Math.round(outputTotal * 100) / 100,
-        cacheCreation: Math.round(cacheCreateTotal * 100) / 100,
-        cacheRead: Math.round(cacheReadTotal * 100) / 100,
-      },
-      tokenTrend: Array.from(dayTokens.entries())
-        .map(([date, t]) => ({
-          date,
-          input: Math.round(t.input * 100) / 100,
-          output: Math.round(t.output * 100) / 100,
-          cacheCreation: Math.round(t.cacheCreation * 100) / 100,
-          cacheRead: Math.round(t.cacheRead * 100) / 100,
-        }))
-        .sort((a, b) => a.date.localeCompare(b.date)),
-      costPerSession: completed.length > 0 ? Math.round((totalCost / completed.length) * 100) / 100 : 0,
+      byTokenType: { input: r2(inputCost), output: r2(outputCost), cacheCreation: r2(cacheCreateCost), cacheRead: r2(cacheReadCost) },
+      tokenTrend,
+      costPerSession: completedCount > 0 ? r2(total / completedCount) : 0,
     }
-
     return c.json(result)
   })
-  .get('/cache', zValidator('query', filterQuerySchema), (c) => {
+
+  .get('/cache', zValidator('query', filterQuerySchema), async (c) => {
     const { range, team_id, model } = c.req.valid('query')
-    const params = { range: range ?? '30d', team_id, model }
+    const f = buildFilters({ range: range ?? '30d', team_id, model })
 
-    const filtered = filterSessions(params)
+    // Org-wide
+    const orgResult = await pool.query(
+      `SELECT COALESCE(SUM(cache_read), 0) AS cr, COALESCE(SUM(input_tokens), 0) AS inp
+       FROM daily_token_stats ${f.where}`,
+      f.params,
+    )
+    const totalCR = num(orgResult.rows[0].cr)
+    const totalInp = num(orgResult.rows[0].inp)
+    const orgRate = (totalCR + totalInp) > 0 ? totalCR / (totalCR + totalInp) : 0
 
-    let totalCacheRead = 0, totalInput = 0
-    for (const s of filtered) {
-      totalCacheRead += s.cacheRead
-      totalInput += s.inputTokens
-    }
-    const orgRate = (totalCacheRead + totalInput) > 0 ? totalCacheRead / (totalCacheRead + totalInput) : 0
-
-    // Savings: cost if cache reads had been full input tokens
+    // Savings per model
+    const savingsResult = await pool.query(
+      `SELECT model, SUM(cache_read) AS cr
+       FROM daily_token_stats ${f.where} GROUP BY model`,
+      f.params,
+    )
     let savings = 0
-    for (const s of filtered) {
-      const p = MODEL_PRICING[s.model]
-      savings += (s.cacheRead * (p.input - p.cacheRead)) / 1_000_000
+    for (const r of savingsResult.rows) {
+      const p = MODEL_PRICING[r.model as string] ?? MODEL_PRICING.sonnet
+      savings += num(r.cr) * (p.input - p.cacheRead) / 1_000_000
     }
 
     // By team
-    const teamData = new Map<string, { cacheRead: number; input: number }>()
-    for (const s of filtered) {
-      const entry = teamData.get(s.teamId) ?? { cacheRead: 0, input: 0 }
-      entry.cacheRead += s.cacheRead
-      entry.input += s.inputTokens
-      teamData.set(s.teamId, entry)
-    }
-    const byTeam = store.teams.map((t) => {
-      const d = teamData.get(t.id) ?? { cacheRead: 0, input: 0 }
-      return {
-        teamId: t.id,
-        teamName: t.name,
-        rate: (d.cacheRead + d.input) > 0 ? d.cacheRead / (d.cacheRead + d.input) : 0,
-      }
+    const teamResult = await pool.query(
+      `SELECT dts.team_id, t.name AS team_name,
+              SUM(dts.cache_read) AS cr, SUM(dts.input_tokens) AS inp
+       FROM daily_token_stats dts JOIN teams t ON t.id = dts.team_id
+       ${f.where} GROUP BY dts.team_id, t.name`,
+      f.params,
+    )
+    const byTeam = teamResult.rows.map((r) => {
+      const cr = num(r.cr), inp = num(r.inp)
+      return { teamId: r.team_id as string, teamName: r.team_name as string, rate: (cr + inp) > 0 ? cr / (cr + inp) : 0 }
     })
 
     // Daily trend
-    const dayCache = new Map<string, { cacheRead: number; input: number }>()
-    for (const s of filtered) {
-      const date = s.timestamp.slice(0, 10)
-      const entry = dayCache.get(date) ?? { cacheRead: 0, input: 0 }
-      entry.cacheRead += s.cacheRead
-      entry.input += s.inputTokens
-      dayCache.set(date, entry)
-    }
-    const trend = Array.from(dayCache.entries())
-      .map(([date, d]) => ({
-        date,
-        rate: (d.cacheRead + d.input) > 0 ? d.cacheRead / (d.cacheRead + d.input) : 0,
-      }))
-      .sort((a, b) => a.date.localeCompare(b.date))
+    const trendResult = await pool.query(
+      `SELECT date, SUM(cache_read) AS cr, SUM(input_tokens) AS inp
+       FROM daily_token_stats ${f.where} GROUP BY date ORDER BY date`,
+      f.params,
+    )
+    const trend = trendResult.rows.map((r) => {
+      const cr = num(r.cr), inp = num(r.inp)
+      return { date: (r.date as Date).toISOString().slice(0, 10), rate: (cr + inp) > 0 ? cr / (cr + inp) : 0 }
+    })
 
-    const result: CacheData = {
-      orgCacheHitRate: orgRate,
-      savings: Math.round(savings * 100) / 100,
-      byTeam,
-      trend,
-    }
-
+    const result: CacheData = { orgCacheHitRate: orgRate, savings: r2(savings), byTeam, trend }
     return c.json(result)
   })
-  .get('/budget', (c) => {
-    const allSessions = filterSessions({ range: '30d' })
-    const currentSpend = allSessions.reduce((sum, s) => sum + s.cost, 0)
+
+  .get('/budget', async (c) => {
+    // Current month spend
+    const spendResult = await pool.query(
+      `SELECT COALESCE(SUM(total_cost), 0) AS spend
+       FROM daily_session_summary
+       WHERE date >= date_trunc('month', NOW())`,
+    )
+    const currentSpend = num(spendResult.rows[0].spend)
+
     const now = new Date()
     const dayOfMonth = now.getDate()
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
     const projected = dayOfMonth > 0 ? (currentSpend / dayOfMonth) * daysInMonth : currentSpend
 
-    // Team budgets (distribute evenly as baseline)
-    const teamBudgetBase = store.budget.monthlyBudget / store.teams.length
-    const teamCosts = new Map<string, number>()
-    for (const s of allSessions) {
-      teamCosts.set(s.teamId, (teamCosts.get(s.teamId) ?? 0) + s.cost)
-    }
+    // Budget config
+    const configResult = await pool.query(
+      'SELECT monthly_budget, thresholds, team_overrides FROM budget_config WHERE id = 1',
+    )
+    const config = configResult.rows[0]
+    const monthlyBudget = config ? num(config.monthly_budget) : 6000
+    const thresholds: number[] = config?.thresholds ?? [50, 75, 90, 100]
+
+    // Per-team spend this month
+    const teamSpendResult = await pool.query(
+      `SELECT dss.team_id, t.name AS team_name, SUM(dss.total_cost) AS spent
+       FROM daily_session_summary dss JOIN teams t ON t.id = dss.team_id
+       WHERE dss.date >= date_trunc('month', NOW())
+       GROUP BY dss.team_id, t.name`,
+    )
+
+    const teamCount = (await pool.query('SELECT COUNT(*) AS cnt FROM teams')).rows[0].cnt
+    const teamBudgetBase = num(teamCount) > 0 ? monthlyBudget / num(teamCount) : 0
+
+    const teamBudgets = teamSpendResult.rows.map((r) => ({
+      teamId: r.team_id as string,
+      teamName: r.team_name as string,
+      budget: r2(teamBudgetBase),
+      spent: r2(num(r.spent)),
+    }))
 
     const result: BudgetData = {
-      monthlyBudget: store.budget.monthlyBudget,
-      currentSpend: Math.round(currentSpend * 100) / 100,
-      projected: Math.round(projected * 100) / 100,
-      percentUsed: store.budget.monthlyBudget > 0 ? currentSpend / store.budget.monthlyBudget : 0,
-      thresholds: store.budget.thresholds,
-      teamBudgets: store.teams.map((t) => ({
-        teamId: t.id,
-        teamName: t.name,
-        budget: Math.round(teamBudgetBase * 100) / 100,
-        spent: Math.round((teamCosts.get(t.id) ?? 0) * 100) / 100,
-      })),
+      monthlyBudget,
+      currentSpend: r2(currentSpend),
+      projected: r2(projected),
+      percentUsed: monthlyBudget > 0 ? currentSpend / monthlyBudget : 0,
+      thresholds,
+      teamBudgets,
     }
-
     return c.json(result)
   })

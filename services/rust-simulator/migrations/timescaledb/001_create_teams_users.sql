@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS teams (
+    id   TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS users (
+    id      TEXT PRIMARY KEY,
+    email   TEXT NOT NULL,
+    team_id TEXT NOT NULL REFERENCES teams(id)
+);

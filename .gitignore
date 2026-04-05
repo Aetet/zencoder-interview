@@ -2,6 +2,7 @@ node_modules/
 dist/
 .next/
 *.tsbuildinfo
+services/rust-simulator/target/
 
 .claude
 
