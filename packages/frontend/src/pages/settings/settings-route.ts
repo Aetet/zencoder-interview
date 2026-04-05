@@ -72,6 +72,14 @@ export const settingsRoute = reatomRoute({
   }
 
   const setTeamOverride = action(async (teamId: string, value: number) => {
+    // Increase org budget by the delta between new and current team budget
+    const currentTeamBudget = computedTeamBudgets()[teamId] ?? 0
+    const delta = value - currentTeamBudget
+    if (delta > 0) {
+      const newOrgBudget = Number(budgetInput()) + delta
+      budgetInput.set(String(Math.round(newOrgBudget)))
+    }
+
     const updated = { ...teamBudgetOverrides(), [teamId]: value }
     teamBudgetOverrides.set(updated)
     try {

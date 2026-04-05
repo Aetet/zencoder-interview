@@ -52,6 +52,10 @@ export const teamsRoute = reatomRoute({
 }).extend(route => {
   const teamsList = computed(() => {
     const teams = route.loader.data() ?? ([] as Team[])
+    // Keep settings route aware of team IDs for budget computation
+    if (teams.length > 0) {
+      settingsRoute.knownTeamIds.set(teams.map(t => t.id))
+    }
     return teams
   }, "teams.list")
 

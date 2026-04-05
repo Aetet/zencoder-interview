@@ -67,6 +67,64 @@ describe('BD-2: Team budget increase', () => {
   })
 })
 
+// --- BD-2b: Org budget auto-increase on team override ---
+
+describe('BD-2b: Org budget auto-increase on team override', () => {
+  const teams = ['a', 'b', 'c', 'd', 'e', 'f']
+
+  function computeNewOrgBudget(
+    orgBudget: number,
+    teamIds: string[],
+    overrides: Record<string, number>,
+    teamId: string,
+    newValue: number,
+  ) {
+    const computed = distributeBudget(orgBudget, teamIds, overrides)
+    const currentTeamBudget = computed[teamId] ?? 0
+    const delta = newValue - currentTeamBudget
+    return delta > 0 ? orgBudget + delta : orgBudget
+  }
+
+  it('2b.1 - team at auto $100, set to $200 → org grows to $700', () => {
+    const newOrg = computeNewOrgBudget(600, teams, {}, 'a', 200)
+    expect(newOrg).toBe(700)
+  })
+
+  it('2b.2 - team with prior override $150, set to $300 → org grows by $150', () => {
+    const newOrg = computeNewOrgBudget(600, teams, { a: 150 }, 'a', 300)
+    expect(newOrg).toBe(750)
+  })
+
+  it('2b.3 - team decrease from $200 to $100 → org stays unchanged', () => {
+    const newOrg = computeNewOrgBudget(600, teams, { a: 200 }, 'a', 100)
+    expect(newOrg).toBe(600)
+  })
+
+  it('2b.4 - team set to same value → org unchanged', () => {
+    const newOrg = computeNewOrgBudget(600, teams, {}, 'a', 100)
+    expect(newOrg).toBe(600)
+  })
+
+  it('2b.5 - multiple sequential increases add up', () => {
+    let orgBudget = 600
+    const overrides: Record<string, number> = {}
+
+    // First increase: a from $100 to $200
+    const computed1 = distributeBudget(orgBudget, teams, overrides)
+    const delta1 = 200 - computed1.a
+    orgBudget += delta1
+    overrides.a = 200
+    expect(orgBudget).toBe(700)
+
+    // Second increase: b from auto ($700-200)/5=$100 to $250
+    const computed2 = distributeBudget(orgBudget, teams, overrides)
+    const delta2 = 250 - computed2.b
+    orgBudget += delta2
+    overrides.b = 250
+    expect(orgBudget).toBe(850)
+  })
+})
+
 // --- BD-3: Team budget decrease ---
 
 describe('BD-3: Team budget decrease', () => {

@@ -165,6 +165,13 @@ Two side-by-side tables:
 - Save persists to server via `POST /api/budgets`
 - Close returns to previous view
 
+**Org Budget Auto-Increase on Team Override:**
+When a team budget is increased above its current computed value, the org monthly budget grows by the same delta. The team's current budget (whether auto-distributed or from a prior override) is used as the baseline.
+
+Example: org budget $6, team "Backend" currently at $2 (auto-distributed). User sets Backend to $10. Delta = $10 − $2 = $8. New org budget = $6 + $8 = $14. If the team had a prior override of $3, delta = $10 − $3 = $7, org budget = $6 + $7 = $13.
+
+Org budget only grows — team budget decreases do not reduce the org total.
+
 **Performance:** AllTeamsContent stays mounted (CSS `hidden`) when viewing team detail to avoid remount cost on back-navigation.
 
 ---

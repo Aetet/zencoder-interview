@@ -422,6 +422,16 @@
 | 2.2 | Save increased override | Override stored, other auto teams recalculated lower |
 | 2.3 | Increase leaves auto teams ≥ $1 | Save succeeds |
 
+### BD-2b: Org budget auto-increase on team override
+
+| # | Test | Assert |
+|---|---|---|
+| 2b.1 | Team at auto $100 (org $600, 6 teams), set to $200 | Org budget increases to $700 (delta +$100) |
+| 2b.2 | Team with prior override $150, set to $300 | Org budget increases by $150 (delta = $300 − $150) |
+| 2b.3 | Team decrease from $200 to $100 | Org budget stays unchanged (only grows) |
+| 2b.4 | Team set to same value as current | Org budget unchanged (delta = 0) |
+| 2b.5 | Multiple sequential increases | Each increase adds its delta to org budget |
+
 ### BD-3: Team budget edit — decrease
 
 | # | Test | Assert |

@@ -36,7 +36,10 @@ export const api = {
   },
   budgets: {
     get: () => client.api.budgets.$get().then(r => r.json()),
-    save: (config: { monthlyBudget: number; teamOverrides?: Record<string, number> }) =>
-      client.api.budgets.$post({ json: config }).then(r => r.json()),
+    save: async (config: { monthlyBudget: number; teamOverrides?: Record<string, number> }) => {
+      const res = await client.api.budgets.$post({ json: config })
+      if (!res.ok) throw new Error(`API error: ${res.status}`)
+      return res.json()
+    },
   },
 }
