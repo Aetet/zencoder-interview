@@ -41,9 +41,6 @@ importers:
       pg:
         specifier: ^8.20.0
         version: 8.20.0
-      zapatos:
-        specifier: ^6.6.1
-        version: 6.6.1(@types/pg@8.20.0)(pg@8.20.0)(typescript@5.9.3)
       zod:
         specifier: ^4.3.6
         version: 4.3.6
@@ -60,9 +57,6 @@ importers:
 
   packages/frontend:
     dependencies:
-      '@number-flow/react':
-        specifier: ^0.6.0
-        version: 0.6.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@reatom/core':
         specifier: 1000.15.2
         version: 1000.15.2
@@ -90,13 +84,7 @@ importers:
       recharts:
         specifier: ^2.15.0
         version: 2.15.4(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      zod:
-        specifier: ^4.3.6
-        version: 4.3.6
     devDependencies:
-      '@hono/zod-validator':
-        specifier: ^0.7.6
-        version: 0.7.6(hono@4.12.10)(zod@4.3.6)
       '@tailwindcss/vite':
         specifier: ^4.1.0
         version: 4.2.2(vite@6.4.1(@types/node@25.5.2)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0))
@@ -559,12 +547,6 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
-
-  '@number-flow/react@0.6.0':
-    resolution: {integrity: sha512-77Yfc9+zkV2UDSP8phhZzxJGuwxi/Tt1TikmipL+1r3e9GFKEYDZ1XwInj67NoSt3OnOB0KLvvcl3lfPZgBHVQ==}
-    peerDependencies:
-      react: ^18 || ^19
-      react-dom: ^18 || ^19
 
   '@oxlint/binding-android-arm-eabi@1.58.0':
     resolution: {integrity: sha512-1T7UN3SsWWxpWyWGn1cT3ASNJOo+pI3eUkmEl7HgtowapcV8kslYpFQcYn431VuxghXakPNlbjRwhqmR37PFOg==}
@@ -1185,9 +1167,6 @@ packages:
     resolution: {integrity: sha512-WUj2qlxaQtO4g6Pq5c29GTcWGDyd8itL8zTlipgECz3JesAiiOKotd8JU6otB3PACgG6xkJUyVhboMS+bje/jA==}
     engines: {node: '>=6'}
 
-  esm-env@1.2.2:
-    resolution: {integrity: sha512-Epxrv+Nr/CaL4ZcFGPJIYLWFom+YeV1DqMLHJoEd9SYRxNbaFruBwfEX/kkHUJf55j2+TUbmDcmuilbP1TmXHA==}
-
   estree-walker@3.0.3:
     resolution: {integrity: sha512-7RUKfXgSMMkzt6ZuXmqapOurLGPPfgj6l9uRZ7lRGolvk0y2yocc35LdcxKC5PQZdn2DMqioAQ2NoWcrTKmm6g==}
 
@@ -1262,9 +1241,6 @@ packages:
     resolution: {integrity: sha512-/sM3dO2FOzXjKQhJuo0Q173wf2KOo8t4I8vHy6lF9poUp7bKT0/NHE8fPX23PwfhnykfqnC2xRxOnVw5XuGIaA==}
     engines: {node: '>=6'}
     hasBin: true
-
-  json-custom-numbers@3.1.1:
-    resolution: {integrity: sha512-rYIAIuiIRy58aax2tuZb7HawKFATBG848PiguybJh/R+pvC8jxjEOVBQHj4J3U2D4/Y4acBCO4A/glILW8wPoA==}
 
   json5@2.2.3:
     resolution: {integrity: sha512-XmOWe7eyHYH14cLdVPoyg+GOH3rYX++KpzrylJwSW98t3Nk+U8XOl8FWKOgwtzdb8lXGf6zYwDUzeHMWfxasyg==}
@@ -1379,9 +1355,6 @@ packages:
 
   nth-check@2.1.1:
     resolution: {integrity: sha512-lqjrjmaOoAnWfMmBPL+XNnynZh2+swxiX3WUE0s4yEHI6m+AwrK2UZOimIRl3X/4QctVqS8AiZjFqyOGrMXb/w==}
-
-  number-flow@0.6.0:
-    resolution: {integrity: sha512-K8flNq2Wqus53vjp/btVo3qXFkagF8dIdYavreBfE7hlvFFG/b1HMGEH6nZL+mlrJ+4lbLP9OmPv3t2rmRkpSQ==}
 
   object-assign@4.1.1:
     resolution: {integrity: sha512-rJgTQnkUnH1sFw8yT6VSU3zD3sWmu6sZhIseY8VX+GRu3P6F7Fu+JNDoXfklElbLJSnc3FUQHVe4cU5hj+BcUg==}
@@ -1696,14 +1669,6 @@ packages:
   yallist@3.1.1:
     resolution: {integrity: sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==}
 
-  zapatos@6.6.1:
-    resolution: {integrity: sha512-HzLY3Umnu4yhKekooRH10Xm7WBvQ9oHD8a+e3mgRQuhymPvUzoEeVZa4qKWo1Hb0YuwZ3miP9LclHQBzQN4e/w==}
-    hasBin: true
-    peerDependencies:
-      '@types/pg': '>=7.14.3'
-      pg: '>=7.18.2'
-      typescript: '>=4.1'
-
   zod@4.3.6:
     resolution: {integrity: sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg==}
 
@@ -2006,13 +1971,6 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
-
-  '@number-flow/react@0.6.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
-    dependencies:
-      esm-env: 1.2.2
-      number-flow: 0.6.0
-      react: 19.2.4
-      react-dom: 19.2.4(react@19.2.4)
 
   '@oxlint/binding-android-arm-eabi@1.58.0':
     optional: true
@@ -2557,8 +2515,6 @@ snapshots:
 
   escalade@3.2.0: {}
 
-  esm-env@1.2.2: {}
-
   estree-walker@3.0.3:
     dependencies:
       '@types/estree': 1.0.8
@@ -2610,8 +2566,6 @@ snapshots:
   js-tokens@9.0.1: {}
 
   jsesc@3.1.0: {}
-
-  json-custom-numbers@3.1.1: {}
 
   json5@2.2.3: {}
 
@@ -2697,10 +2651,6 @@ snapshots:
   nth-check@2.1.1:
     dependencies:
       boolbase: 1.0.0
-
-  number-flow@0.6.0:
-    dependencies:
-      esm-env: 1.2.2
 
   object-assign@4.1.1: {}
 
@@ -3039,12 +2989,5 @@ snapshots:
   xtend@4.0.2: {}
 
   yallist@3.1.1: {}
-
-  zapatos@6.6.1(@types/pg@8.20.0)(pg@8.20.0)(typescript@5.9.3):
-    dependencies:
-      '@types/pg': 8.20.0
-      json-custom-numbers: 3.1.1
-      pg: 8.20.0
-      typescript: 5.9.3
 
   zod@4.3.6: {}
