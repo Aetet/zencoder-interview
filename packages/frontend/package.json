@@ -13,8 +13,7 @@
   },
   "dependencies": {
     "@number-flow/react": "^0.6.0",
-    "@reatom/core": "1000.15.2",
-    "@reatom/jsx": "^1000.1.0",
+"@reatom/core": "1000.15.2",
     "@reatom/react": "1000.2.2",
     "@tanstack/react-virtual": "^3.13.23",
     "@zendash/shared": "workspace:*",

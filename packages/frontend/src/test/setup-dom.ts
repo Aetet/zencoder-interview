@@ -3,10 +3,14 @@ import { parseHTML } from 'linkedom'
 const { document, window } = parseHTML('<!DOCTYPE html><html><body><div id="root"></div></body></html>')
 
 // Patch globals for React and component tests
+Object.defineProperty(globalThis, 'navigator', {
+  value: window.navigator,
+  writable: true,
+  configurable: true,
+})
 Object.assign(globalThis, {
   document,
   window,
-  navigator: window.navigator,
   HTMLElement: window.HTMLElement,
   HTMLButtonElement: (window as any).HTMLButtonElement ?? window.HTMLElement,
   HTMLInputElement: (window as any).HTMLInputElement ?? window.HTMLElement,
