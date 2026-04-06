@@ -24,6 +24,50 @@ Simulator (Rust) → TimescaleDB → Kafka → Transformer (Rust) → PostgreSQL
 | PostgreSQL | `postgres://zendash:zendash_dev@localhost:5432/zendash` |
 | Kafka | `localhost:9092` |
 
+## Initial Database Population
+
+First-time setup creates tables and seeds data automatically. No manual SQL needed.
+
+### 1. Start the databases
+
+```bash
+docker compose up -d timescaledb postgres
+```
+
+Wait until both are healthy (~5 seconds):
+
+```bash
+docker compose ps   # both should show "healthy"
+```
+
+### 2. Run the simulator
+
+```bash
+cd services/rust-simulator
+cargo run -- poll
+```
+
+On first run, the simulator:
+
+1. **Runs migrations** — SQLx applies all files from `migrations/timescaledb/` and `migrations/postgres/` automatically via `connect_and_migrate()`. This creates all tables: `teams`, `users`, `agent_events`, `daily_session_summary`, `daily_token_stats`, `daily_quality_stats`, `team_user_stats`, `alerts_log`, `budget_config`.
+2. **Seeds teams and users** — generates teams with associated users in both databases.
+3. **Generates 3 days of historical data** — backfills `agent_events` in TimescaleDB and all aggregated tables in PostgreSQL.
+4. **Starts polling** — produces ~900 new sessions every 30 seconds.
+
+### Verify population
+
+```bash
+# Check PostgreSQL aggregates
+PGPASSWORD=zendash_dev psql -h localhost -p 5432 -U zendash -d zendash \
+  -c "SELECT COUNT(*) AS teams FROM teams; SELECT SUM(total_sessions) AS sessions FROM daily_session_summary;"
+
+# Check TimescaleDB raw events
+PGPASSWORD=zendash_dev psql -h localhost -p 5433 -U zendash -d zendash_events \
+  -c "SELECT COUNT(*) AS events FROM agent_events;"
+```
+
+Both queries should return non-zero values within ~30 seconds of starting the simulator.
+
 ## Simulator Commands
 
 ```bash
